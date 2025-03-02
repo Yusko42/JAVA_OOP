@@ -1,5 +1,3 @@
-import java.util.*;
-
 public class Main{
     public static void main(String[] args){
         if (args.length != 2){
@@ -10,17 +8,14 @@ public class Main{
         String inputFile = args[0];
         String outputFile = args[1];
 
-        //place where all the words will be stored
-        Map<String, Integer> wordCount = new HashMap<>();
-
-        //1 - READING FROM FILE: SHOULD BE ANOTHER OBJECT
+        //1 - READING FROM A TXT FILE
         Reader wordReader = new Reader();
-        wordReader.CollectWordsFromTextFile(inputFile);
+        wordReader.collectWordsFromTextFile(inputFile);
 
-        //2 - WRITING TO CSV FILE: SHOULD BE ANOTHER OBJECT
-        Writer wordWriter = new Writer(outputFile, wordReader.getNumber_of_words(), wordReader.getWordCount());
+        //2 - WRITING TO A CSV FILE
+        Writer wordWriter = new Writer(wordReader.getWordCount());
+        wordWriter.writeWordsIntoCSVFile(outputFile, wordReader.getNumberOfWords());
 
-
-        System.out.println("Completed!");
+        System.out.println("Completed! The result is in the file:" + outputFile);
     }
 }
