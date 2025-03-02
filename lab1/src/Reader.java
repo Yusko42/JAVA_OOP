@@ -42,7 +42,7 @@ public class Reader {
             }
 
         } catch (IOException e) {
-            System.err.println("ERROR while reading a file:" + e.getLocalizedMessage());
+            System.err.println("ERROR while reading a file: " + e.getLocalizedMessage());
             System.exit(1);
         } finally {
             if (reader != null) {

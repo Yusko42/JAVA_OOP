@@ -30,12 +30,12 @@ public class Writer {
                                     String.format("%.4f", frequency * 100));
                             csvWriter.newLine();
                         } catch (IOException e) {
-                            System.err.println("ERROR in the process of writing:" + e.getLocalizedMessage());
+                            System.err.println("ERROR in the process of writing: " + e.getLocalizedMessage());
                             System.exit(2);
                         }
                     });
         } catch (IOException e) {
-            System.err.println("ERROR while writing into a file:" + e.getLocalizedMessage());
+            System.err.println("ERROR while writing into a file: " + e.getLocalizedMessage());
             System.exit(3);
         } finally {
             if (csvWriter != null)
