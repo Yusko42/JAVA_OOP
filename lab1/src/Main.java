@@ -13,8 +13,8 @@ public class Main{
         wordReader.collectWordsFromTextFile(inputFile);
 
         //2 - WRITING TO A CSV FILE
-        Writer wordWriter = new Writer(wordReader.getWordCount());
-        wordWriter.writeWordsIntoCSVFile(outputFile, wordReader.getNumberOfWords());
+        Writer wordWriter = new Writer(wordReader.getwordCounters(), outputFile);
+        wordWriter.writeWordsIntoCSVFile(wordReader.getNumberOfWords());
 
         System.out.println("Completed! The result is in the file: " + outputFile);
     }
