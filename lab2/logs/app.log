@@ -20,3 +20,27 @@ Terminal mode will be started.
 [2025-04-21 01:42:12] [ERROR] ru.nsu.calculator.CalculatorEngine.CalculatorEngine - Error while opening the file. 
 Terminal mode will be started.
 
+[2025-04-21 13:28:26] [ERROR] ru.nsu.calculator.CalculatorEngine.CalculatorEngine - Error while opening the file. 
+Terminal mode will be started.
+
+[2025-04-21 14:02:27] [INFO ] org.testng.internal.Utils - [TestNG] Running:
+  C:\Users\Сергей Юсько\AppData\Local\JetBrains\IntelliJIdea2024.3\temp-testng-customsuite.xml
+
+[2025-04-21 14:02:27] [INFO ] ru.nsu.calculator.operators.AdditionOperatorTest - Calculate value passed!
+[2025-04-21 14:05:07] [INFO ] org.testng.internal.Utils - [TestNG] Running:
+  C:\Users\Сергей Юсько\AppData\Local\JetBrains\IntelliJIdea2024.3\temp-testng-customsuite.xml
+
+[2025-04-21 14:05:18] [INFO ] org.testng.internal.Utils - [TestNG] Running:
+  C:\Users\Сергей Юсько\AppData\Local\JetBrains\IntelliJIdea2024.3\temp-testng-customsuite.xml
+
+[2025-04-21 14:05:27] [INFO ] org.testng.internal.Utils - [TestNG] Running:
+  C:\Users\Сергей Юсько\AppData\Local\JetBrains\IntelliJIdea2024.3\temp-testng-customsuite.xml
+
+[2025-04-21 14:05:27] [INFO ] ru.nsu.calculator.operators.SubtractionOperatorTest - Subtraction test passed!
+[2025-04-21 14:16:09] [ERROR] ru.nsu.calculator.CalculatorEngine.CalculatorEngine - Error while creating an operator. Cause: Operator name not found: DEFIFN
+[2025-04-21 14:16:18] [ERROR] ru.nsu.calculator.CalculatorEngine.CalculatorEngine - Error while executing an operator: "DEFINE A A A"
+[2025-04-21 14:16:18] [ERROR] ru.nsu.calculator.CalculatorEngine.CalculatorEngine - Cause: DEFINE expects 2 arguments: name and value.
+[2025-04-21 14:16:32] [ERROR] ru.nsu.calculator.CalculatorEngine.CalculatorEngine - Error while executing an operator: "DEFINE 2 A"
+[2025-04-21 14:16:32] [ERROR] ru.nsu.calculator.CalculatorEngine.CalculatorEngine - Cause: First argument cannot be a float number.
+[2025-04-21 14:16:58] [ERROR] ru.nsu.calculator.CalculatorEngine.CalculatorEngine - Error while executing an operator: "DEFINE A A"
+[2025-04-21 14:16:58] [ERROR] ru.nsu.calculator.CalculatorEngine.CalculatorEngine - Cause: Second argument must be a float number
