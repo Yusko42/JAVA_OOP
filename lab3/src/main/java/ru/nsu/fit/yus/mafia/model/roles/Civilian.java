@@ -1,5 +1,9 @@
 package ru.nsu.fit.yus.mafia.model.roles;
 
+import ru.nsu.fit.yus.mafia.model.Player;
+
+import java.util.List;
+
 public class Civilian implements Role {
     public String getRoleName() {
         return "Civilian";
@@ -10,10 +14,10 @@ public class Civilian implements Role {
     }
 
     public String getAbilityDescription(){
-        return "You can accuse someone of being a mafioso players during the day.";
+        return "You can accuse someone of being a mafiosi players during the day.";
     }
 
-    public void nightAction(){
-        return;
+    public Player nightAction(Player self, List<Player> livingCivilians){
+        return self;
     }
 }

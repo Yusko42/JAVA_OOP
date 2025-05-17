@@ -24,4 +24,17 @@ public class Controller {
         }
 
     }
+
+
+    public int getNumberOfPlayers() {
+        return 6;
+    }
+
+    public int getNumberOfRealPlayers() {
+        return 1;
+    }
+
+    public String getPlayerName() {
+        return "Yusko";
+    }
 }

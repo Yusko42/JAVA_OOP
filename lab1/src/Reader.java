@@ -7,21 +7,17 @@ import java.util.*;
 
 public class Reader {
     private double numberOfWords = 0;
-    private final Map<String, Integer> wordCount = new HashMap<>();
-    private BufferedReader reader = null;
+    private final Map<String, Integer> wordCounters = new HashMap<>();
 
     public double getNumberOfWords() {
         return numberOfWords;
     }
-    public Map<String, Integer> getWordCount() {
-        return wordCount;
+    public Map<String, Integer> getwordCounters() {
+        return wordCounters;
     }
 
     public void collectWordsFromTextFile(String inputFile) {
-        try {
-            reader = new BufferedReader(new InputStreamReader
-                    (new FileInputStream(inputFile), StandardCharsets.UTF_8));
-
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFile), StandardCharsets.UTF_8))){
             int ch;
             StringBuilder wordConstructor = new StringBuilder();
 
@@ -30,28 +26,21 @@ public class Reader {
                     wordConstructor.append((char) ch);
                 else if (!wordConstructor.isEmpty()) {
                     String completeWord = wordConstructor.toString().toLowerCase();
-                    wordCount.put(completeWord, wordCount.getOrDefault(completeWord, 0) + 1);
+                    //wordCounters.put(completeWord, wordCounters.getOrDefault(completeWord, 0) + 1);
+                    wordCounters.compute(completeWord, (word, value) -> (value == null) ? 1 : value + 1);
                     wordConstructor.setLength(0);
                     ++numberOfWords;
                 }
             }
             if (!wordConstructor.isEmpty()) {
                 String completeWord = wordConstructor.toString().toLowerCase();
-                wordCount.put(completeWord, wordCount.getOrDefault(completeWord, 0) + 1);
+                wordCounters.compute(completeWord, (word, value) -> (value == null) ? 1 : value + 1);
                 ++numberOfWords;
             }
 
         } catch (IOException e) {
             System.err.println("ERROR while reading a file: " + e.getLocalizedMessage());
             System.exit(1);
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace(System.err);
-                }
-            }
         }
     }
 }
