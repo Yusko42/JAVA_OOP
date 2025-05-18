@@ -1,6 +1,5 @@
 package ru.nsu.fit.yus.mafia.model;
 
-import ru.nsu.fit.yus.mafia.model.decisionProvider.DecisionProvider;
 import ru.nsu.fit.yus.mafia.model.messages.LastWord;
 import ru.nsu.fit.yus.mafia.model.messages.LastWordType;
 import ru.nsu.fit.yus.mafia.model.messages.Message;
@@ -304,7 +303,7 @@ public class Model {
 
         if (topCandidates.size() == 1)
             return topCandidates.removeFirst();
-        else  if (voteCount < 3) {
+        else if (voteCount < 3) {
             voteCount++;
             throw new RuntimeException("NEW VOTE FOT THR KILLER!");
         } else {

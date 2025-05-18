@@ -26,9 +26,13 @@ public class HumanController implements DecisionProvider {
     public Message chooseMessage(Player self, GameContext context) {
         return controller.requestPlayerMessage(self, context);
     }
-
-    public Message chooseMafiaMessage(Player self, GameContext context) {}
-    public Message chooseSheriffMessage(Player self, GameContext context, int jailedMafiaCount, int totalMafiaCount) {}
-    public LastWord chooseLastWord(Player self, GameContext context) {}
-    //Пусть будет private метод, который будут вызывать остальные методы, если это человек?
+    public Message chooseMafiaMessage(Player self, GameContext context) {
+        return controller.requestMafiaMessage(self, context);
+    }
+    public Message chooseSheriffMessage(Player self, GameContext context, int jailedMafiaCount, int totalMafiaCount) {
+        return controller.requestShefiffMessage(self, context);
+    }
+    public LastWord chooseLastWord(Player self, GameContext context) {
+        return controller.requestLastWord(self, context);
+    }
 }

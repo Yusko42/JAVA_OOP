@@ -1,22 +1,20 @@
-package ru.nsu.fit.yus.mafia;
+package ru.nsu.fit.yus.mafia.console;
 
 import ru.nsu.fit.yus.mafia.console.controller.Controller;
+import ru.nsu.fit.yus.mafia.console.view.View;
 import ru.nsu.fit.yus.mafia.model.Model;
-import ru.nsu.fit.yus.mafia.model.Player;
-import ru.nsu.fit.yus.mafia.model.decisionProvider.BotEngine;
-import ru.nsu.fit.yus.mafia.model.decisionProvider.DecisionProvider;
-import ru.nsu.fit.yus.mafia.model.decisionProvider.HumanController;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
-        Controller controller = new Controller();
         Model model = new Model();
-        //private View view;
+        View view = new View();
+        Controller controller = new Controller(model, view);
+        controller.runGame();
+    }
+}
 
-        List<Player> playersList = new ArrayList<>();
+
+/*List<Player> playersList = new ArrayList<>();
 
         // Подготовка
         int numberOfPlayers = controller.getNumberOfPlayers();
@@ -44,9 +42,4 @@ public class Main {
 
         // Передача в модель
         model.initializePlayersAndContext(playersList);
-
-    }
-
-
-
-}
+        */
