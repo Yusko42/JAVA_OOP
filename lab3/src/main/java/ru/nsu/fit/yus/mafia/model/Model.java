@@ -1,6 +1,10 @@
 package ru.nsu.fit.yus.mafia.model;
 
 import ru.nsu.fit.yus.mafia.model.decisionProvider.DecisionProvider;
+import ru.nsu.fit.yus.mafia.model.messages.LastWord;
+import ru.nsu.fit.yus.mafia.model.messages.LastWordType;
+import ru.nsu.fit.yus.mafia.model.messages.Message;
+import ru.nsu.fit.yus.mafia.model.messages.MessageType;
 import ru.nsu.fit.yus.mafia.model.roles.Civilian;
 import ru.nsu.fit.yus.mafia.model.roles.Mafia;
 import ru.nsu.fit.yus.mafia.model.roles.Role;
@@ -14,40 +18,22 @@ public class Model {
     private GameContext context;
 
     private List<Role> availableRoles;
-
-    /// Не вижу смысла больше в конструкторе модели.
-    /*public Model(int numberOfPlayers){
-        // 1. Список ролей
-        availableRoles = createRoleList(numberOfPlayers);
-        //initializePlayers(numberOfPlayers, realPlayerName);
-        //context = new GameContext(playersList);    //Night - 0
-    }*/
+    private int voteCount = 0;
 
     // 1. Создание списка ролей
-    public void createListOfAvailableRoles(int numberOfPlayers) {
+    public void generateAvailableRoles(int numberOfPlayers) {
         availableRoles = createRoleList(numberOfPlayers);
     }
 
-    // 2. Назначение игроков - в Main
-
-    // 3. Назначение доверия
-    private void initializePlayers(List<Player> playersList) {
-        //Первую роль из перемешанной стопки - реальному игроку
-        /*Player realPlayer = new Player(realPlayerName, availableRoles.removeFirst(), false);
-        playersList.add(realPlayer);
-
-        //Создание ботов
-        for (int i = 1; i < numberOfPlayers; i++) {
-            Role botRole = availableRoles.removeFirst();
-            Player bot = new Player("Bot " + i, botRole, true);
-            playersList.add(bot);
-        }*/
-
-        //3. Назначение начального доверия игрокам
+    public void initializePlayersAndContext(List<Player> playersList) {
+        // 2. Назначение игроков - в Main
         this.playersList = playersList;
 
-        // Инициализируем доверие
+        // 3. Назначение начального доверия игрокам
         trustInitializer();
+
+        // 4. Создание контекста
+        context = new GameContext(this.playersList);
     }
 
     /// Сколько мафиози, в каком (случайном) порядке - всё здесь
@@ -59,8 +45,8 @@ public class Model {
         int sheriffCount = 1;
         int civilianCount = numberOfPlayers - mafiaCount - sheriffCount;
 
+        for (int i = 0; i < sheriffCount; i++) availableRoles.add(new Sheriff(mafiaCount));
         for (int i = 0; i < mafiaCount; i++) availableRoles.add(new Mafia());
-        for (int i = 0; i < sheriffCount; i++) availableRoles.add(new Sheriff());
         for (int i = 0; i < civilianCount; i++) availableRoles.add(new Civilian());
 
         Collections.shuffle(availableRoles);
@@ -69,12 +55,20 @@ public class Model {
 
 
     public Role getRoleForNewPlayer() {
+        if (availableRoles.isEmpty()) {
+            throw new IllegalStateException("No roles left to assign."); // На перспективу...
+        }
         return availableRoles.removeFirst();
+
     }
 
     public void trustInitializer() {
         for (Player p : playersList) {
             for (Player other : playersList) {
+                // У мафиози - зафиксированные значения доверия!
+                if (p.getPlayerRole().isMafia() && other.getPlayerRole().isMafia()) {
+                    p.getTrustLevels().put(other, 2.0);
+                }
                 if (!p.equals(other)) {
                     p.getTrustLevels().put(other, 0.0); // Стартовое доверие нейтральное
                 }
@@ -117,42 +111,162 @@ public class Model {
     // Исключение если он мертв надо обрабатывать...
     public void sheriffCheck(/*GameContext context*/) {
         Player sheriff = context.getAliveSheriff();
-        Player target = sheriff.getPlayerRole().nightAction(sheriff, context.getAlivePlayers());
+        Player target = sheriff.getPlayerRole().nightAction(sheriff, context.getAlivePlayersExcept(sheriff));
 
         //Теперь он должен понять, мафия это или нет
-        if (target.getPlayerRole() instanceof Mafia)
-            sheriff.getTrustLevels().put(target, -0.8);
+        if (target.getPlayerRole().isMafia())
+            sheriff.getTrustLevels().put(target, -2.0);
         else
-            sheriff.getTrustLevels().put(target, 0.8);
+            sheriff.getTrustLevels().put(target, 2.0);
+    }
+
+    public void doctorCheck() {
+        Player doctor = context.getAliveDoctor();
+        Player target = doctor.getPlayerRole().nightAction(doctor, context.getAlivePlayersExcept(doctor));
+
+        // Cures the target
+        target.heal();
+        if (possibleVictim == target)
+            possibleVictim = null;
     }
 
     /// ДЕНЬ
 
-    // Объявление об убийстве, иначе - ДОБРОЕ УТРО СТРАНА!
+    // Объявление об убийстве, иначе - все хорошо!
     public String announcement() {
-        String announce;
         if (possibleVictim != null)
-            announce = ("EXTRA: " + possibleVictim.getPlayerName() + " was killed last night. RIP...");
+            return ("EXTRA: " + possibleVictim.getPlayerName() + " was killed last night.");
         else
-            announce = ("Good morning! It was a peaceful night. For now...");
+            return ("Good morning! It was a peaceful night. For now...");
+    }
 
+    public void lastWordOfTheMurdered() {
+        // Последнее слово жертвы мафии
+        if (possibleVictim != null) {
+            LastWord last_mes = possibleVictim.getPlayerRole().dayLastWord(possibleVictim, context);
+
+            if (last_mes.getLastWordType() == LastWordType.NAME_THE_KILLER) {
+                Player suspect = last_mes.getSuspect();
+
+                for (Player player : context.getAlivePlayersExcept(suspect)) {
+                    // Если игрок - шериф и он знает подозреваемого, его константные значения доверия не меняем!
+                    if (player.getPlayerRole().isSheriff()
+                            && player.getPlayerRole().ignoresTrustShift(player, suspect, context)) {
+                        continue;
+                        // Рейтинг к коллегам в мафии тоже не меняем
+                    } else if ((player.getPlayerRole().isMafia())
+                        && (player.getTrustLevels().get(suspect) == 2.0)) {
+                        continue;
+                    } else { // Иначе
+                        player.getTrustLevels()
+                                .put(suspect, Math.max(-1.0, suspect.getTrustLevels().get(suspect) - 0.08));
+                    }
+                }
+
+            }
+
+            //Логруем жертвы в отдельном Map
+            context.getLastWordLog().put(context.getNumberOfStage(), last_mes);
+
+        }
         possibleVictim = null;
-        return announce;
     }
 
     //Обсуждение днем случившегося ПЕРЕД голосованием
-    public void discussion(/*GameContext context*/) {
-        for (Player p : context.getAlivePlayers()) {
+    public void discussion() {
+        context.getMessageLog().put(context.getNumberOfStage(), new ArrayList<>()); // Новый список сообщений на день
+        for (Player player : context.getAlivePlayers()) {
+            Message mes = player.getPlayerRole().dayDiscussion(player, context);
 
+            //ВЛИЯНИЕ СООБЩЕНИЯ НА ДОВЕРИЕ ДРУГОГО ИГРОКА
+
+            // ПОДОЗРЕНИЕ
+            if (mes.getMessageType() == MessageType.SUSPICION) {
+                Player author = mes.getAuthor();
+                Player target = mes.getTarget();
+                // Мафия отводит подозрения с себя таким образом. Даже у обвиняемого, может и так сойдёт
+                if (target.getPlayerRole().isMafia()) {
+                    if (author.getPlayerRole().isMafia()) {
+                        continue;
+                    } else {
+                        List<Player> mafiaMembers = context.getAliveMafia();
+                        for (Player mafia : mafiaMembers)
+                            mafia.getTrustLevels().put(author, Math.min(1.0, mafia.getTrustLevels().get(author) + 0.06));
+                    }
+                } else { // Иначе рейтинг доверия к нему падает
+                    if ((target.getPlayerRole().isSheriff()) &&
+                            target.getPlayerRole().ignoresTrustShift(author, target, context)
+                            /*&& (target.getTrustLevels().get(author) == -2.0
+                            || target.getTrustLevels().get(author) == 2.0 )*/)
+                        continue;
+                    else {
+                        target.getTrustLevels()
+                                .put(author, Math.max(-1.0, target.getTrustLevels().get(author) - 0.08));
+                        // МАФИЯ ГОТОВИТСЯ ПОДСТАВЛЯТЬ ОТВЕТЧИКА Б, УБИВАЯ А
+                        List<Player> mafiaMembers = context.getAliveMafia();
+                        for (Player mafia : mafiaMembers)
+                            mafia.getTrustLevels().put(author, Math.max(-1.0, mafia.getTrustLevels().get(author) - 0.2));
+                    }
+                }
+            }
+
+            // ДОВЕРИЕ
+            if (mes.getMessageType() == MessageType.SUPPORT) {
+                Player author = mes.getAuthor();
+                Player target = mes.getTarget();
+
+                if (target.getPlayerRole().isMafia()) {
+                    if (author.getPlayerRole().isMafia()) {
+                        continue;
+                    } else {
+                        List<Player> mafiaMembers = context.getAliveMafia();
+                        for (Player mafia : mafiaMembers)
+                            mafia.getTrustLevels().put(author, Math.max(-1.0, mafia.getTrustLevels().get(author) - 0.1));
+                    }
+                } else {
+                    if ((target.getPlayerRole().isSheriff())
+                            && target.getPlayerRole().ignoresTrustShift(author, target, context)
+                            /*&& (target.getTrustLevels().get(author) == -2.0
+                            || target.getTrustLevels().get(author) == 2.0 )*/)
+                        continue;
+                    else
+                        target.getTrustLevels()
+                                .put(author, Math.min(1.0, target.getTrustLevels().get(author) + 0.06));
+                }
+            }
+
+            // ШЕРИФ ДОЛОЖИЛ О НАЛИЧИИ МАФИИ
+            if (mes.getMessageType() == MessageType.SHERIFF_MAFIA_REPORT) {
+                Player author = mes.getAuthor(); // Шериф??
+                Player target = mes.getTarget();
+
+                if (target.getPlayerRole().isMafia()) {
+                    if (author.getPlayerRole().isMafia()) {
+                        continue;
+                    } else { // Буду устранять шерифа, пока не выдал всех (если остался один, то он постарается отвести подозрения)
+                        List<Player> mafiaMembers = context.getAliveMafia();
+                        if (mafiaMembers.size() > 1) {
+                            target.getTrustLevels().put(author, Math.max(-1.0, target.getTrustLevels().get(author) - 0.07));
+                        } else {
+                            for (Player mafia : mafiaMembers)
+                                mafia.getTrustLevels().put(author, Math.max(-1.0, mafia.getTrustLevels().get(author) - 0.3));
+                        }
+                    }
+                } else { //Мирный поймёт ложь
+                    target.getTrustLevels().put(author, Math.max(-1.0, target.getTrustLevels().get(author) - 0.8));
+                }
+            }
+
+            context.getMessageLog().get(context.getNumberOfStage()).add(mes);
         }
     }
 
     // Дневное голосование ВСЕХ ЖИВЫХ ИГРОКОВ
-    public void vote(/*GameContext context*/) {
+    public void vote() {
         Map<Player, Integer> potentialSuspects = new HashMap<>();
 
         for (Player player : context.getAlivePlayers()) {
-            Player suspect = player.getPlayerRole().dayVote(player, context.getAliveCivilian());
+            Player suspect = player.getPlayerRole().dayVote(player, context.getAlivePlayersExcept(player));
             potentialSuspects.merge(suspect, 1, Integer::sum);
         }
 
@@ -190,8 +304,11 @@ public class Model {
 
         if (topCandidates.size() == 1)
             return topCandidates.removeFirst();
-        else {
-            // Исключение и повторное голосование?
+        else  if (voteCount < 3) {
+            voteCount++;
+            throw new RuntimeException("NEW VOTE FOT THR KILLER!");
+        } else {
+            throw new RuntimeException("No one can be imprisoned!");
         }
     }
 

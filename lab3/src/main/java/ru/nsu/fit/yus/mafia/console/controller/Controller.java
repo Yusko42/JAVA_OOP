@@ -5,7 +5,7 @@ import ru.nsu.fit.yus.mafia.model.Model;
 //Простая накидочка того, что должно здесь быть
 
 public class Controller {
-    private Model model = new Model(8, "Daniel"); //ОБЯЗАТЕЛЬНО В МЕЙН!
+    private Model model = new Model(); //ОБЯЗАТЕЛЬНО В МЕЙН!
     public void game(){
         while (true) {
             model.mafiaVote();

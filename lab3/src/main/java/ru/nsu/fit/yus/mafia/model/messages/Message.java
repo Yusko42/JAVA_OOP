@@ -2,22 +2,22 @@ package ru.nsu.fit.yus.mafia.model.messages;
 
 import ru.nsu.fit.yus.mafia.model.Player;
 
-enum MessageType {
-    SUSPICION,
-    SUPPORT,
-    SHERIFF_REPORT
-}
-
 public class Message {
-    private Player author;
-    private Player target;
-    private MessageType messageType;
+    private final Player author;
+    private final Player target;
+    private final MessageType messageType;
+    private final String text; //Что будет видно игрокам
 
-
-    Message(Player self) {
-        author = self;
+    public Message(Player author, Player target, MessageType messageType, String text) {
+        this.author = author;
+        this.target = target;
+        this.messageType = messageType;
+        this.text = text;
     }
 
-
-
+    public Player getAuthor() { return author; }
+    public Player getTarget() { return target; }
+    public MessageType getMessageType() { return messageType; }
+    public String getText() { return text; }
 }
+

@@ -5,6 +5,7 @@ import ru.nsu.fit.yus.mafia.model.Model;
 import ru.nsu.fit.yus.mafia.model.Player;
 import ru.nsu.fit.yus.mafia.model.decisionProvider.BotEngine;
 import ru.nsu.fit.yus.mafia.model.decisionProvider.DecisionProvider;
+import ru.nsu.fit.yus.mafia.model.decisionProvider.HumanController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,30 +13,37 @@ import java.util.List;
 public class Main {
     public static void main(String[] args) {
         Controller controller = new Controller();
-        Model model = new Model(...);
+        Model model = new Model();
         //private View view;
 
         List<Player> playersList = new ArrayList<>();
 
-        // 2. Создание списка игроков с назначенными ролями
+        // Подготовка
         int numberOfPlayers = controller.getNumberOfPlayers();
         int numberOfRealPlayers = 1; //controller.getNumberOfRealPlayers; - в перспективе, если буду делать мультиплеер
         String realPlayerName = controller.getPlayerName();
 
+
+        // 1. Список ролей
+        model.generateAvailableRoles(numberOfPlayers);
+
+        // 2. Создание списка игроков с назначенными ролями
         // Создание реального игрока (в будущем - новых игроков?)
-        for (int i = 1; i < numberOfRealPlayers + 1; i++) {
-            Player realPlayer = new Player(realPlayerName, model.getRoleForNewPlayer(), false, controller);
+        for (int i = 0; i < numberOfRealPlayers; i++) {
+            DecisionProvider humanController = new HumanController(controller);
+            Player realPlayer = new Player(realPlayerName, model.getRoleForNewPlayer(), false, humanController);
             playersList.add(realPlayer);
         }
 
         //Создание ботов
-        for (int i = 1; i < numberOfPlayers - numberOfRealPlayers + 1; i++) {
+        for (int i = 0; i < numberOfPlayers - numberOfRealPlayers; i++) {
             DecisionProvider botEngine = new BotEngine();
-            Player bot = new Player("Bot " + i, model.getRoleForNewPlayer(), true, botEngine);
+            Player bot = new Player("Bot " + (i + 1), model.getRoleForNewPlayer(), true, botEngine);
             playersList.add(bot);
         }
 
-        // 3. Передача в модель
+        // Передача в модель
+        model.initializePlayersAndContext(playersList);
 
     }
 

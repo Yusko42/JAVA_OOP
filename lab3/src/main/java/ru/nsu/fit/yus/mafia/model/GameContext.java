@@ -1,13 +1,19 @@
 package ru.nsu.fit.yus.mafia.model;
 
+import ru.nsu.fit.yus.mafia.model.messages.LastWord;
+import ru.nsu.fit.yus.mafia.model.messages.Message;
+import ru.nsu.fit.yus.mafia.model.roles.Doctor;
 import ru.nsu.fit.yus.mafia.model.roles.Mafia;
 import ru.nsu.fit.yus.mafia.model.roles.Sheriff;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 public class GameContext {
     private final List<Player> playersList;
+    private final Map<Integer, List<Message>> messageLog = new HashMap<>();
+    private final Map<Integer, LastWord> lastWordLog = new HashMap<>();
     private int numberOfStage;
     private boolean isDay;
 
@@ -17,7 +23,7 @@ public class GameContext {
         isDay = false;
     }
 
-    // Stage operations
+    /// Stage operations
 
     public void newNight() {
         ++numberOfStage;
@@ -36,7 +42,9 @@ public class GameContext {
         return numberOfStage;
     }
 
-    //Players operations
+    /// Players operations
+
+    // CIVILIANS
 
     public List<Player> getAllCivilian() {
         return playersList.stream()
@@ -51,6 +59,8 @@ public class GameContext {
                 .toList();
     }
 
+    // MAFIA
+
     public List<Player> getAllMafia() {
         return playersList.stream()
                 .filter(p -> (p.getPlayerRole() instanceof Mafia))
@@ -64,6 +74,8 @@ public class GameContext {
                 .toList();
     }
 
+    // SHERIFF
+
     public Player getAliveSheriff() {
         Player sheriff = null;
         sheriff = playersList.stream()
@@ -74,9 +86,38 @@ public class GameContext {
         return sheriff;
     }
 
+    // DOCTOR
+
+    public Player getAliveDoctor() {
+        Player doctor = null;
+        doctor = playersList.stream()
+                .filter(Player::isAlive)
+                .filter(p -> (p.getPlayerRole() instanceof Doctor)).toList().removeFirst();
+        if (doctor == null)
+            throw new IllegalStateException("Sorry, the doctor's dead...");
+        return doctor;
+    }
+
+    // ALL PLAYERS
+
     public List<Player> getAlivePlayers() {
         return playersList.stream()
                 .filter(Player::isAlive)
                 .toList();
+    }
+
+    public List<Player> getAlivePlayersExcept(Player self) {
+        return playersList.stream()
+                .filter(Player::isAlive)
+                .filter(p -> (p != self))
+                .toList();
+    }
+
+    public Map<Integer, List<Message>> getMessageLog() {
+        return messageLog;
+    }
+
+    public Map<Integer, LastWord> getLastWordLog() {
+        return lastWordLog;
     }
 }

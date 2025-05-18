@@ -1,8 +1,6 @@
 package ru.nsu.fit.yus.mafia.model;
 
-import ru.nsu.fit.yus.mafia.model.decisionProvider.BotEngine;
 import ru.nsu.fit.yus.mafia.model.decisionProvider.DecisionProvider;
-import ru.nsu.fit.yus.mafia.model.decisionProvider.HumanController;
 import ru.nsu.fit.yus.mafia.model.roles.Role;
 import java.util.Map;
 import java.util.HashMap;
@@ -19,18 +17,8 @@ public class Player {
         this.playerName = playerName;
         this.playerRole = playerRole;
         this.isBot = isBot;
-        //setDecisionProvider();
         this.decisionProvider = decisionProvider; // and thus, I changed the responsibilities of classes... again.
     }
-
-    /*private void setDecisionProvider() {
-        if (isBot)
-            this.decisionProvider = new BotEngine();
-        else
-            this.decisionProvider = new HumanController(controller);
-    }*/
-
-
 
     public DecisionProvider getDecisionProvider() {
         if (decisionProvider == null)
