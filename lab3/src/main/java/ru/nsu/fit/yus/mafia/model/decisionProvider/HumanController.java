@@ -1,6 +1,7 @@
 package ru.nsu.fit.yus.mafia.model.decisionProvider;
 
-import ru.nsu.fit.yus.mafia.console.controller.Controller;
+// Абстрактный контроллер, конкретный передается через Controller
+import ru.nsu.fit.yus.mafia.Controller;
 import ru.nsu.fit.yus.mafia.model.GameContext;
 import ru.nsu.fit.yus.mafia.model.Player;
 import ru.nsu.fit.yus.mafia.model.messages.LastWord;

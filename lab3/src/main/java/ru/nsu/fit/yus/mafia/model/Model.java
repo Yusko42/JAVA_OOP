@@ -1,5 +1,8 @@
 package ru.nsu.fit.yus.mafia.model;
 
+import ru.nsu.fit.yus.mafia.EventType;
+import ru.nsu.fit.yus.mafia.Observable;
+import ru.nsu.fit.yus.mafia.Observer;
 import ru.nsu.fit.yus.mafia.model.messages.LastWord;
 import ru.nsu.fit.yus.mafia.model.messages.LastWordType;
 import ru.nsu.fit.yus.mafia.model.messages.Message;
@@ -12,7 +15,7 @@ import ru.nsu.fit.yus.mafia.model.roles.Sheriff;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class Model {
+public class Model implements Observable {
     private List<Player> playersList = new ArrayList<>();
     private GameContext context;
 
@@ -77,8 +80,14 @@ public class Model {
 
 
 
-    public void startDay() { context.newDay(); }
-    public void startNight() { context.newNight(); }
+    public void startDay() {
+        context.newDay();
+        notifyObservers(EventType.DAY_STARTED, null);
+    }
+    public void startNight() {
+        context.newNight();
+        notifyObservers(EventType.NIGHT_STARTED, null);
+    }
 
     /// НОЧЬ
 
@@ -91,6 +100,14 @@ public class Model {
         //Собираем статистику по голосованию, БОЛЬШИЙ ВЕС У ЧЕЛОВЕКА
         for (Player mafiosi : context.getAliveMafia()) {
             Player victim = mafiosi.getPlayerRole().nightAction(mafiosi, context.getAliveCivilian());
+
+            // Каждый член мафии высказывает мнение
+            Map<String, Object> mes = new HashMap<>();
+            mes.put("player", mafiosi.getPlayerName());
+            mes.put("message", victim.getPlayerName());
+            notifyObservers(EventType.PLAYER_SPOKEN, mes);
+
+
             if (!mafiosi.isBot())
                 potentialVictims.merge(victim, 2, Integer::sum);
             else //может и задержку для ботов прописать?
@@ -132,11 +149,16 @@ public class Model {
     /// ДЕНЬ
 
     // Объявление об убийстве, иначе - все хорошо!
-    public String announcement() {
-        if (possibleVictim != null)
-            return ("EXTRA: " + possibleVictim.getPlayerName() + " was killed last night.");
-        else
-            return ("Good morning! It was a peaceful night. For now...");
+    public void announcement() {
+        Map<String, Object> mes = new HashMap<>();
+        if (possibleVictim != null) {
+            mes.put("player", possibleVictim.getPlayerName());
+            notifyObservers(EventType.PLAYER_KILLED, mes);
+        }
+        else {
+            mes.put("message", "Good morning! It was a peaceful night. For now...");
+            notifyObservers(EventType.SHOW_MESSAGE, mes);
+        }
     }
 
     public void lastWordOfTheMurdered() {
@@ -311,8 +333,52 @@ public class Model {
         }
     }
 
+    // Часть, отвечающая за отправку данных подписчикам
+
+    private final List<Observer> observerList = new ArrayList<>();
+
+    public void addObserver(Observer observer) {
+        observerList.add(observer);
+    }
+    public void removeObserver(Observer observer) {
+        observerList.remove(observer);
+    }
+    public List<Observer> getObservers() {
+        return observerList;
+    }
+
+    // Общаемся с подписчиками
+
+    public void notifyObservers(EventType type, Map<String, Object> data) {
+        for (Observer observer : observerList) {
+            observer.onGameEvent(type, data);
+        }
+    }
+
     // Проверка: убито/посажено достаточное количество игроков для завершения игры
-    public boolean isGameOver() {
-        return context.getAliveMafia().size() >= context.getAliveCivilian().size();
+    public boolean isMafiaWon() {
+        boolean result = false;
+        if (context.getAliveMafia().size() >= context.getAliveCivilian().size()) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("winner", "Mafia");
+            notifyObservers(EventType.GAME_ENDED, data);
+            result = context.getAliveMafia().size() >= context.getAliveCivilian().size();
+        }
+        return result;
+    }
+
+    public boolean isCiviliansWon() {
+        boolean result = false;
+        if (context.getAliveMafia().isEmpty()) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("winner", "Civilians");
+            notifyObservers(EventType.GAME_ENDED, data);
+            result = context.getAliveMafia().isEmpty();
+        }
+        return result;
+    }
+
+    public int getMaximumNumberOfPlayers() {
+        return 10;
     }
 }
