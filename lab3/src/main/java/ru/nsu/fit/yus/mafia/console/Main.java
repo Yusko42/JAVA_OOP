@@ -17,8 +17,8 @@ public class Main {
 
         //Начало игры
         Model model = new Model();
-        ConsoleView view = new ConsoleView();
-        ConsoleController controller = new ConsoleController(model, view, data.getName(), data.getNumber());
+        ConsoleView view = new ConsoleView(model); // View - подписчик на model
+        ConsoleController controller = new ConsoleController(model, view, data.name(), data.number());
         controller.runGame();
     }
 }

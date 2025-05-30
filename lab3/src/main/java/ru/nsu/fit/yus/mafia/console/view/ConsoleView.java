@@ -7,16 +7,27 @@ import ru.nsu.fit.yus.mafia.model.messages.Message;
 
 import ru.nsu.fit.yus.mafia.EventType;
 import ru.nsu.fit.yus.mafia.Observer;
-import ru.nsu.fit.yus.mafia.dto_objects.LastWordInfo;
-import ru.nsu.fit.yus.mafia.dto_objects.MessageInfo;
-import ru.nsu.fit.yus.mafia.dto_objects.PlayerInfo;
+import ru.nsu.fit.yus.mafia.model.Model;
+import ru.nsu.fit.yus.mafia.model.Player;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class ConsoleView implements Observer {
+    private Player subscriber; // для фильтрации
+    private List<String> livingPlayers = new ArrayList<>(); // сохраняем список живых
 
-    private List<String> livingPlayers = List.of(); // сохраняем список живых
+    // Создаем подписчика в лице ConsoleView
+    public ConsoleView (Model model) {
+        model.addObserver(this);
+    }
+
+    public void assignTheSubscriber(Player subscriber) {
+        this.subscriber = subscriber;
+    }
+
 
     @Override
     public void onGameEvent(EventType type, Map<String, Object> data) {
@@ -25,23 +36,32 @@ public class ConsoleView implements Observer {
             case NIGHT_STARTED -> displayNightStart();
             case NIGHT_ENDED -> displayNightEnd();
             case DAY_STARTED -> displayDayStart();
+            case SHERIFF_CHECK -> displaySheriffInvestigation((String) data.get("player"), (boolean) data.get("isMafia"));
             case PLAYER_KILLED -> displayPlayerKilled((String) data.get("player"));
             case PLAYER_SPOKEN -> displayPlayerSpoken((String) data.get("player"), (String) data.get("message"));
             case PLAYER_VOTED -> displayVote((String) data.get("voter"), (String) data.get("voted"));
+            case MAFIA_VOTED -> displayMafiaVote((String) data.get("voter"), (String) data.get("voted"));
+            case VICTIM_CHOSEN -> displayMafiaDecision((String) data.get("victim"));
             case PLAYER_ELIMINATED -> displayElimination((String) data.get("player"));
             case GAME_ENDED -> displayGameEnd((String) data.get("winner"));
-            case TRUST_UPDATED -> displayTrustUpdate((Map<String, Double>) data.get("trustMap"));
+            case GAME_OVER -> displayGameOver();
             case PLAYER_ROLE_REVEALED -> displayPlayerRole((String) data.get("player"), (String) data.get("role"));
-            case PLAYER_MESSAGE_OPTIONS -> displayMessageOptions((List<String>) data.get("options"));
-            case PLAYER_CHOOSE_TARGET -> displayTargetChoices((String) data.get("player"), (List<String>) data.get("targets"));
-            case LIVING_PLAYERS_UPDATED -> updateLivingPlayers((List<String>) data.get("players"));
+            //case TRUST_UPDATED -> displayTrustUpdate((Map<String, Double>) data.get("trustMap"));
+            case PLAYER_MESSAGE_OPTIONS -> displayMessageOptions((Player) data.get("player"), (List<String>) data.get("options"));
+            case PLAYER_CHOOSE_TARGET -> displayTargetChoices((Player) data.get("player"), (List<String>) data.get("targets"));
+            case SHOW_LIVING_PLAYERS -> updateLivingPlayers((List<String>) data.get("players"));
+            case SHOW_LIVING_MAFIA -> displayLivingMafia((List<String>) data.get("members"));
+            case SHOW_LIVING_SHERIFF -> displayLivingSheriff((String) data.get("sheriff"));
+            case SHOW_LIVING_DOCTOR -> displayLivingDoctor((String) data.get("doctor"));
             case PLAYER_LAST_WORD -> displayLastWord((String) data.get("player"), (String) data.get("message"));
             case SHOW_MESSAGE -> displayMessage((String) data.get("message"));
+            case NEW_VOTE -> displayNewVote();
+            case NOBODY_PRISONED -> displayNobodyPrisoned();
         }
     }
 
     private void displayGameStart() {
-        System.out.println("🟢 Игра началась!");
+        System.out.println("Игра началась!");
     }
 
     private void displayNightStart() {
@@ -54,7 +74,6 @@ public class ConsoleView implements Observer {
 
     private void displayDayStart() {
         System.out.println("🌞 Наступил день.");
-        displayLivingPlayers();
     }
 
     private void displayPlayerKilled(String player) {
@@ -69,12 +88,30 @@ public class ConsoleView implements Observer {
         System.out.println("🗳️ " + voter + " голосует за " + voted);
     }
 
+
+    // ВИДНО ТОЛЬКО ЧЛЕНАМ МАФИИ
+    private void displayMafiaVote(String voter, String voted) {
+        if (subscriber.getPlayerRole().isMafia()) {
+            System.out.println("Мафиозо " + voter + " голосует за " + voted);
+        }
+    }
+
+    private void displayMafiaDecision(String victim) {
+        if (subscriber.getPlayerRole().isMafia()) {
+            System.out.println("По итогам была выбрана жертва: " + victim);
+        }
+    }
+
     private void displayElimination(String player) {
         System.out.println("❌ По итогам голосования исключён игрок: " + player);
     }
 
     private void displayGameEnd(String winner) {
         System.out.println("🏁 Игра окончена! Победила команда: " + winner);
+    }
+
+    private void displayGameOver() {
+        System.out.println("🏁 Игра окончена! Увы, вы были убиты.");
     }
 
     private void displayTrustUpdate(Map<String, Double> trustMap) {
@@ -87,15 +124,17 @@ public class ConsoleView implements Observer {
         System.out.println("🕵️ " + player + ", ваша роль: " + role);
     }
 
-    private void displayMessageOptions(List<String> options) {
-        System.out.println("💬 Возможные реплики:");
+    private void displayMessageOptions(Player player, List<String> options) {
+        if (player != subscriber) { return; }
+        System.out.println("💬 Варианты ответа:");
         for (int i = 0; i < options.size(); i++) {
             System.out.printf("  [%d] %s%n", i + 1, options.get(i));
         }
     }
 
-    private void displayTargetChoices(String player, List<String> targets) {
-        System.out.println("🎯 " + player + ", выберите цель:");
+    private void displayTargetChoices(Player player, List<String> targets) {
+        if (player != subscriber) { return; } //Выходим, если сообщение предназначено не нам
+        System.out.println("🎯 " + player.getPlayerName() + ", выберите цель:");
         for (int i = 0; i < targets.size(); i++) {
             System.out.printf("  [%d] %s%n", i + 1, targets.get(i));
         }
@@ -103,69 +142,64 @@ public class ConsoleView implements Observer {
 
     private void updateLivingPlayers(List<String> players) {
         this.livingPlayers = players;
-        System.out.println("🧍 Живые игроки:");
-        displayLivingPlayers();
+        System.out.println("Живые игроки:");
+        displayLivingPlayers(players);
     }
 
-    private void displayLivingPlayers() {
-        for (String player : livingPlayers) {
+
+    // ТОЛЬКО МАФИИ
+    private void displayLivingMafia(List<String> mafiaMembers) {
+        if (subscriber.getPlayerRole().isMafia()) {
+            System.out.println("Просыпается мафия: ");
+            displayLivingPlayers(mafiaMembers);
+        }
+    }
+
+    // ТОЛЬКО ШЕРИФУ
+    private void displayLivingSheriff(String sheriff) {
+        if (subscriber.getPlayerRole().isSheriff()) {
+            System.out.println("Шериф: ");
+            displayLivingPlayers(Collections.singletonList(sheriff));
+        }
+    }
+
+    public void displaySheriffInvestigation(String target, boolean isMafia) {
+        if (subscriber.getPlayerRole().isSheriff()) {
+            if (isMafia)
+                System.out.println(target + " - мафия!");
+            else
+                System.out.println(target + " - не мафия.");
+        }
+    }
+
+    // ТОЛЬКО ДОКТОРУ
+    private void displayLivingDoctor(String doctor) {
+        if (subscriber.getPlayerRole().isDoctor()) {
+            System.out.println("Доктор: ");
+            displayLivingPlayers(Collections.singletonList(doctor));
+        }
+    }
+
+    private void displayLivingPlayers(List<String> playersList) {
+        for (String player : playersList) {
             System.out.println(" - " + player);
         }
     }
 
     private void displayLastWord(String player, String message) {
-        System.out.printf("🗣️ Последнее слово %s: \"%s\"%n", player, message);
+        System.out.printf("🗣 Последнее слово %s: \"%s\"%n", player, message);
     }
 
     private void displayMessage(String message) {
         System.out.println(message);
     }
 
-    // Оставлю может для вывода ошибок?
-
-    /*
-    public void showAnnouncement(String text) {
-        System.out.println("ANNOUNCEMENT: \n" + text);
-    }
-    
-    public void showMessage(String message) {
-        System.out.println(message);
+    private void displayNewVote() {
+        System.out.println("Итог неоднозначен, назначаем повторное голосование!");
     }
 
-    public void showCandidates(List<String> livingCandidatesNames) {
-        int number = 1;
-        for (String name : livingCandidatesNames) {
-            System.out.println(number++ + ". " + name);
-        }
+    private void displayNobodyPrisoned() {
+        System.out.println("По итогам голосования никто не был исключён!");
     }
-    
-    public void showDiscussion(List<MessageInfo> messages) {
-        System.out.println("Discussion:");
-        for (MessageInfo msg : messages) {
-            System.out.println("- " + msg.sender() + ": " + msg.text());
-        }
-    }
-
-    public void showLastWord(LastWordInfo lastWord) {
-        System.out.println("Last Word of " + lastWord.victim() + ": " + lastWord.text());
-    }
-
-    public void showVotingResults(Map<PlayerInfo, Integer> votes) {
-        System.out.println("Voting results:");
-        votes.forEach((player, count) ->
-                System.out.println("- " + player.name() + ": " + count + " votes"));
-    }
-
-    public void showPlayerRoles(List<PlayerInfo> players) {
-        for (PlayerInfo p : players) {
-            System.out.println(p.name() + ": " + p.getPlayerRole().getClass().getSimpleName());
-        }
-    }
-
-    public void showFinalResult(String result) {
-        System.out.println("🏁 Game Over: " + result);
-    }*/
-
-
 
 }

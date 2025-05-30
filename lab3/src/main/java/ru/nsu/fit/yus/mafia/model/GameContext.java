@@ -6,6 +6,7 @@ import ru.nsu.fit.yus.mafia.model.roles.Doctor;
 import ru.nsu.fit.yus.mafia.model.roles.Mafia;
 import ru.nsu.fit.yus.mafia.model.roles.Sheriff;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,25 +78,42 @@ public class GameContext {
     // SHERIFF
 
     public Player getAliveSheriff() {
-        Player sheriff = null;
+        /*Player sheriff = null;
         sheriff = playersList.stream()
                 .filter(Player::isAlive)
                 .filter(p -> (p.getPlayerRole() instanceof Sheriff)).toList().removeFirst();
         if (sheriff == null)
             throw new IllegalStateException("Sorry, the sheriff's dead...");
-        return sheriff;
+        return sheriff;*/
+
+        List<Player> list = new ArrayList<> (playersList.stream()
+                .filter(Player::isAlive)
+                .filter(p -> (p.getPlayerRole() instanceof Sheriff)).toList()); // оборачиваем в изменяемый
+
+        if (list.isEmpty())
+            return null;
+            //throw new IllegalStateException("Sorry, the sheriff's dead...");
+        return list.remove(0);
     }
 
     // DOCTOR
 
     public Player getAliveDoctor() {
-        Player doctor = null;
+        /*Player doctor = null;
         doctor = playersList.stream()
                 .filter(Player::isAlive)
                 .filter(p -> (p.getPlayerRole() instanceof Doctor)).toList().removeFirst();
         if (doctor == null)
             throw new IllegalStateException("Sorry, the doctor's dead...");
-        return doctor;
+        return doctor;*/
+        List<Player> list = new ArrayList<> (playersList.stream()
+                .filter(Player::isAlive)
+                .filter(p -> (p.getPlayerRole() instanceof Doctor)).toList()); // оборачиваем в изменяемый
+
+        if (list.isEmpty())
+            return null;
+            //throw new IllegalStateException("Sorry, the doctor's dead...");
+        return list.remove(0);
     }
 
     // ALL PLAYERS

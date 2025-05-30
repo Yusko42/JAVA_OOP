@@ -3,7 +3,8 @@ package ru.nsu.fit.yus.mafia.console.view;
 public class TitleScreenView {
     public void showTitleScreen() {
         cleanConsole();
-        System.out.println("MAFIA: The Game\n");
+        System.out.println("                  -- MAFIA: The Game --                     \n\n\n");
+        System.out.println("(c) 1986, 1987, 2025  Based on the game by Dimitry Davidoff\n");
         System.out.println("Enter the command below:");
     }
     public void showAbout() {
@@ -32,8 +33,10 @@ public class TitleScreenView {
         cleanConsole();
         System.out.println("(c) Original game by Dimitry Davidoff     1986, 1987");
         System.out.println("(c) Java Adaptation by @yusk42            2025");
-        System.out.println("\nThe program is a free implementation of 'Mafia', a social deduction game created by Dimitry Davidoff.");
-        System.out.println("The creator of this implementation does not claim intellectual property rights of the creators and owners of the trademark.");
+        System.out.println("\n");
+        System.out.println("The program is a free implementation of 'Mafia', a social deduction game created by Dimitry Davidoff.");
+        System.out.println("The creator of this implementation does not claim intellectual property rights of the creators ");
+        System.out.println("and owners of the trademark.");
         System.out.println("The software is freeware. If you paid for it, you have been SCAMMED!");
     }
     public void showInvalidInput() {
@@ -65,6 +68,7 @@ public class TitleScreenView {
     }
 
     private void cleanConsole() {
+        System.out.print("\033[H\033[2J");
         System.out.flush();
     }
 }

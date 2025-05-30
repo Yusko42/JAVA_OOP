@@ -17,8 +17,8 @@ public class TitleScreenController {
     }
 
     public PlayerData runTitleScreen() {
+        view.showTitleScreen();
         while (true) {
-            view.showTitleScreen();
             String choice = input.nextLine();
 
             switch (choice) {

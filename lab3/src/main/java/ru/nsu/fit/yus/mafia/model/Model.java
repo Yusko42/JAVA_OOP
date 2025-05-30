@@ -7,20 +7,16 @@ import ru.nsu.fit.yus.mafia.model.messages.LastWord;
 import ru.nsu.fit.yus.mafia.model.messages.LastWordType;
 import ru.nsu.fit.yus.mafia.model.messages.Message;
 import ru.nsu.fit.yus.mafia.model.messages.MessageType;
-import ru.nsu.fit.yus.mafia.model.roles.Civilian;
-import ru.nsu.fit.yus.mafia.model.roles.Mafia;
-import ru.nsu.fit.yus.mafia.model.roles.Role;
-import ru.nsu.fit.yus.mafia.model.roles.Sheriff;
+import ru.nsu.fit.yus.mafia.model.roles.*;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Model implements Observable {
     private List<Player> playersList = new ArrayList<>();
-    private GameContext context;
-
     private List<Role> availableRoles;
-    private int voteCount = 0;
+    private GameContext context;
+    //private int voteCount = 0;
 
     // 1. Создание списка ролей
     public void generateAvailableRoles(int numberOfPlayers) {
@@ -36,6 +32,11 @@ public class Model implements Observable {
 
         // 4. Создание контекста
         context = new GameContext(this.playersList);
+
+        // 5. Старт, вывод на экран всех игроков
+        notifyObservers(EventType.GAME_STARTED, null);
+        showAllLivingPlayers();
+        delay(5000);
     }
 
     /// Сколько мафиози, в каком (случайном) порядке - всё здесь
@@ -45,10 +46,12 @@ public class Model implements Observable {
         // Примерные пропорции: 1 шериф, 2-3 мафиози, остальные мирные
         int mafiaCount = Math.min(3, numberOfPlayers / 3);
         int sheriffCount = 1;
-        int civilianCount = numberOfPlayers - mafiaCount - sheriffCount;
+        int doctorCount = 1;
+        int civilianCount = numberOfPlayers - (mafiaCount + sheriffCount + doctorCount);
 
         for (int i = 0; i < sheriffCount; i++) availableRoles.add(new Sheriff(mafiaCount));
         for (int i = 0; i < mafiaCount; i++) availableRoles.add(new Mafia());
+        for (int i = 0; i < doctorCount; i++) availableRoles.add(new Doctor());
         for (int i = 0; i < civilianCount; i++) availableRoles.add(new Civilian());
 
         Collections.shuffle(availableRoles);
@@ -60,11 +63,10 @@ public class Model implements Observable {
         if (availableRoles.isEmpty()) {
             throw new IllegalStateException("No roles left to assign."); // На перспективу...
         }
-        return availableRoles.removeFirst();
-
+        return availableRoles.remove(0);
     }
 
-    public void trustInitializer() {
+    private void trustInitializer() {
         for (Player p : playersList) {
             for (Player other : playersList) {
                 // У мафиози - зафиксированные значения доверия!
@@ -78,6 +80,69 @@ public class Model implements Observable {
         }
     }
 
+    //Можно так вывести и роль, и его цель, и способности...
+
+    public void playerRoleReveal(Observer ob, String playerName, String playerRole) {
+        // Вывод роли игрока
+        Map<String, Object> mes = new HashMap<>();
+        mes.put("player", playerName);
+        mes.put("role", playerRole);
+        notifyConcreteObserver(ob, EventType.PLAYER_ROLE_REVEALED, mes);
+    }
+
+    // Обновляем список живых игроков, выводим его всем
+    private void showAllLivingPlayers() {
+        Map<String, Object> mes = new HashMap<>();
+        List<String> playersNames = new ArrayList<>();
+        for (Player p : context.getAlivePlayers()) {
+            playersNames.add(p.getPlayerName());
+        }
+
+        mes.put("players", playersNames);
+        notifyObservers(EventType.SHOW_LIVING_PLAYERS, mes);
+    }
+
+    private void showAllLivingMafia() {
+        Map<String, Object> mes = new HashMap<>();
+        List<String> mafiaNames = new ArrayList<>();
+        for (Player p : context.getAliveMafia()) {
+            mafiaNames.add(p.getPlayerName());
+        }
+        mes.put("members", mafiaNames);
+        notifyObservers(EventType.SHOW_LIVING_MAFIA, mes);
+    }
+
+    private boolean showLivingSheriff() {
+        Map<String, Object> mes = new HashMap<>();
+        Player player = context.getAliveSheriff();
+        if (player == null)
+            return false;
+        String playersName = player.getPlayerName();
+
+        mes.put("sheriff", playersName);
+        notifyObservers(EventType.SHOW_LIVING_SHERIFF, mes);
+        return true;
+    }
+
+    private boolean showLivingDoctor() {
+        Map<String, Object> mes = new HashMap<>();
+        Player player = context.getAliveDoctor();
+        if (player == null)
+            return false;
+        String playersName = player.getPlayerName();
+
+        mes.put("doctor", playersName);
+        notifyObservers(EventType.SHOW_LIVING_DOCTOR, mes);
+        return true;
+    }
+
+    private void delay(int ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
 
     public void startDay() {
@@ -94,7 +159,10 @@ public class Model implements Observable {
     private Player possibleVictim;
 
     // Ночное голосование МАФИИ
-    public void mafiaVote(/*GameContext context*/) {
+    public void mafiaVote() {
+        showAllLivingMafia();
+        delay(5000);
+
         Map<Player, Integer> potentialVictims = new HashMap<>();
 
         //Собираем статистику по голосованию, БОЛЬШИЙ ВЕС У ЧЕЛОВЕКА
@@ -102,10 +170,12 @@ public class Model implements Observable {
             Player victim = mafiosi.getPlayerRole().nightAction(mafiosi, context.getAliveCivilian());
 
             // Каждый член мафии высказывает мнение
+            // Должно быть видно ТОЛЬКО ЧЛЕНАМ МАФИИ
             Map<String, Object> mes = new HashMap<>();
-            mes.put("player", mafiosi.getPlayerName());
-            mes.put("message", victim.getPlayerName());
-            notifyObservers(EventType.PLAYER_SPOKEN, mes);
+            mes.put("voter", mafiosi.getPlayerName());
+            mes.put("voted", victim.getPlayerName());
+            notifyObservers(EventType.MAFIA_VOTED, mes);
+            delay(3000);
 
 
             if (!mafiosi.isBot())
@@ -117,17 +187,24 @@ public class Model implements Observable {
         // Теперь выбор мафии проверяется:
         // либо устраняют того, за кого проголосовало большинство,
         // либо определяет рандом
-        Player victim = getMostVotedVictim(potentialVictims);
-
-        possibleVictim = victim; //Доктор его может сделать null
-        this.kill(victim);
+        possibleVictim = getMostVotedVictim(potentialVictims);
     }
 
     // Ночное патрулирование ШЕРИФА
     // Исключение если он мертв надо обрабатывать...
     public void sheriffCheck(/*GameContext context*/) {
+        if (!showLivingSheriff()) {
+            return;
+        }
+        delay(3000);
+
         Player sheriff = context.getAliveSheriff();
         Player target = sheriff.getPlayerRole().nightAction(sheriff, context.getAlivePlayersExcept(sheriff));
+
+        notifyObservers(EventType.SHERIFF_CHECK, Map.of(
+                "target", target.getPlayerName(),
+                "isMafia", target.getPlayerRole().isMafia()
+        ));
 
         //Теперь он должен понять, мафия это или нет
         if (target.getPlayerRole().isMafia())
@@ -137,6 +214,11 @@ public class Model implements Observable {
     }
 
     public void doctorCheck() {
+        if (!showLivingDoctor()) {
+            return;
+        }
+        delay(3000);
+
         Player doctor = context.getAliveDoctor();
         Player target = doctor.getPlayerRole().nightAction(doctor, context.getAlivePlayersExcept(doctor));
 
@@ -144,6 +226,12 @@ public class Model implements Observable {
         target.heal();
         if (possibleVictim == target)
             possibleVictim = null;
+    }
+
+    public void killPossibleVictim() {
+        if (possibleVictim != null) {
+            this.kill(possibleVictim);
+        }
     }
 
     /// ДЕНЬ
@@ -156,9 +244,12 @@ public class Model implements Observable {
             notifyObservers(EventType.PLAYER_KILLED, mes);
         }
         else {
-            mes.put("message", "Good morning! It was a peaceful night. For now...");
+            mes.put("message", "Доброе утро! Сегодняшняя ночь была необыкновенно спокойной. Пока что...");
             notifyObservers(EventType.SHOW_MESSAGE, mes);
         }
+        // Выводим живых игроков
+        showAllLivingPlayers();
+        delay(3000);
     }
 
     public void lastWordOfTheMurdered() {
@@ -170,24 +261,33 @@ public class Model implements Observable {
                 Player suspect = last_mes.getSuspect();
 
                 for (Player player : context.getAlivePlayersExcept(suspect)) {
-                    // Если игрок - шериф и он знает подозреваемого, его константные значения доверия не меняем!
+                    double currentTrust = player.getTrustLevels().getOrDefault(suspect, 0.0);
+
+                    // Не трогаем мафий, которые доверяют своему с 2.0
+                    if (player.getPlayerRole().isMafia() && currentTrust == 2.0) {
+                        continue;
+                    }
+
+                    // Не трогаем шерифа, если он уже нашёл мафию
                     if (player.getPlayerRole().isSheriff()
                             && player.getPlayerRole().ignoresTrustShift(player, suspect, context)) {
                         continue;
-                        // Рейтинг к коллегам в мафии тоже не меняем
-                    } else if ((player.getPlayerRole().isMafia())
-                        && (player.getTrustLevels().get(suspect) == 2.0)) {
-                        continue;
-                    } else { // Иначе
-                        player.getTrustLevels()
-                                .put(suspect, Math.max(-1.0, suspect.getTrustLevels().get(suspect) - 0.08));
                     }
+
+                    // Остальным уменьшаем доверие
+                    player.getTrustLevels().put(suspect, Math.max(-1.0, currentTrust - 0.08));
                 }
 
             }
 
             //Логруем жертвы в отдельном Map
             context.getLastWordLog().put(context.getNumberOfStage(), last_mes);
+
+            notifyObservers(EventType.PLAYER_LAST_WORD, Map.of(
+                    "player", possibleVictim.getPlayerName(),
+                    "message", last_mes.getText()
+            ));
+            delay(5000);
 
         }
         possibleVictim = null;
@@ -198,6 +298,12 @@ public class Model implements Observable {
         context.getMessageLog().put(context.getNumberOfStage(), new ArrayList<>()); // Новый список сообщений на день
         for (Player player : context.getAlivePlayers()) {
             Message mes = player.getPlayerRole().dayDiscussion(player, context);
+
+            // Вывод всем игрокам
+            notifyObservers(EventType.PLAYER_SPOKEN, Map.of(
+                    "player", player.getPlayerName(),
+                    "message", mes.getText()
+            ));
 
             //ВЛИЯНИЕ СООБЩЕНИЯ НА ДОВЕРИЕ ДРУГОГО ИГРОКА
 
@@ -225,8 +331,11 @@ public class Model implements Observable {
                                 .put(author, Math.max(-1.0, target.getTrustLevels().get(author) - 0.08));
                         // МАФИЯ ГОТОВИТСЯ ПОДСТАВЛЯТЬ ОТВЕТЧИКА Б, УБИВАЯ А
                         List<Player> mafiaMembers = context.getAliveMafia();
-                        for (Player mafia : mafiaMembers)
-                            mafia.getTrustLevels().put(author, Math.max(-1.0, mafia.getTrustLevels().get(author) - 0.2));
+                        for (Player mafia : mafiaMembers) {
+                            double currentTrust = mafia.getTrustLevels().getOrDefault(author, 0.0);
+                            if (currentTrust == 2.0) continue;
+                            mafia.getTrustLevels().put(author, Math.max(-1.0, currentTrust - 0.2));
+                        }
                     }
                 }
             }
@@ -270,7 +379,11 @@ public class Model implements Observable {
                             target.getTrustLevels().put(author, Math.max(-1.0, target.getTrustLevels().get(author) - 0.07));
                         } else {
                             for (Player mafia : mafiaMembers)
-                                mafia.getTrustLevels().put(author, Math.max(-1.0, mafia.getTrustLevels().get(author) - 0.3));
+                            {
+                                double currentTrust = mafia.getTrustLevels().getOrDefault(author, 0.0);
+                                if (currentTrust == 2.0) continue;
+                                mafia.getTrustLevels().put(author, Math.max(-1.0, currentTrust - 0.3));
+                            }
                         }
                     }
                 } else { //Мирный поймёт ложь
@@ -284,21 +397,39 @@ public class Model implements Observable {
 
     // Дневное голосование ВСЕХ ЖИВЫХ ИГРОКОВ
     public void vote() {
-        Map<Player, Integer> potentialSuspects = new HashMap<>();
+        int attempts = 0;
+        while (attempts < 3) {
+            Map<Player, Integer> potentialSuspects = new HashMap<>();
+            Player victim;
+            for (Player player : context.getAlivePlayers()) {
+                Player suspect = player.getPlayerRole().dayVote(player, context.getAlivePlayersExcept(player));
+                potentialSuspects.merge(suspect, 1, Integer::sum);
 
-        for (Player player : context.getAlivePlayers()) {
-            Player suspect = player.getPlayerRole().dayVote(player, context.getAlivePlayersExcept(player));
-            potentialSuspects.merge(suspect, 1, Integer::sum);
+                // Вывод
+                notifyObservers(EventType.PLAYER_VOTED, Map.of(
+                        "voter", player.getPlayerName(),
+                        "voted", suspect.getPlayerName()
+                ));
+            }
+
+            // Теперь выбор городских проверяется:
+            // либо устраняют того, за кого проголосовало большинство,
+            // либо повторное голосование
+            victim = getMostVotedSuspect(potentialSuspects);
+            if (victim != null) {
+                this.kill(victim);
+                notifyObservers(EventType.PLAYER_ELIMINATED, Map.of("player", victim.getPlayerName()));
+                return;
+            }
+
+            attempts++;
+            if (attempts < 3) {
+                notifyObservers(EventType.NEW_VOTE, null); // запустить новое голосование
+            }
         }
-
-        // Теперь выбор городских проверяется:
-        // либо устраняют того, за кого проголосовало большинство,
-        // либо повторное голосование (но ПОКА что рандом)
-        Player victim = getMostVotedVictim(potentialSuspects);
-
-        this.kill(victim);
-        //Сообщение надо бы вывести что ль...
+        notifyObservers(EventType.NOBODY_PRISONED, null);
     }
+
 
     // Применяется как после голосования днем, так и после голосования мафии ночью
     private void kill(Player victim) {
@@ -318,41 +449,15 @@ public class Model implements Observable {
 
     private Player getMostVotedSuspect(Map<Player, Integer> potentialSuspects) {
         int maxVotes = potentialSuspects.values().stream().max(Integer::compareTo).orElse(0);
-        List<Player> topCandidates = potentialSuspects.entrySet().stream()
+        List<Player> topCandidates = new ArrayList<>(potentialSuspects.entrySet().stream()
                 .filter(entry -> entry.getValue() == maxVotes)
                 .map(Map.Entry::getKey)
-                .toList();
+                .toList());
 
         if (topCandidates.size() == 1)
-            return topCandidates.removeFirst();
-        else if (voteCount < 3) {
-            voteCount++;
-            throw new RuntimeException("NEW VOTE FOT THR KILLER!");
-        } else {
-            throw new RuntimeException("No one can be imprisoned!");
-        }
-    }
-
-    // Часть, отвечающая за отправку данных подписчикам
-
-    private final List<Observer> observerList = new ArrayList<>();
-
-    public void addObserver(Observer observer) {
-        observerList.add(observer);
-    }
-    public void removeObserver(Observer observer) {
-        observerList.remove(observer);
-    }
-    public List<Observer> getObservers() {
-        return observerList;
-    }
-
-    // Общаемся с подписчиками
-
-    public void notifyObservers(EventType type, Map<String, Object> data) {
-        for (Observer observer : observerList) {
-            observer.onGameEvent(type, data);
-        }
+            return topCandidates.remove(0);
+        else
+            return null;
     }
 
     // Проверка: убито/посажено достаточное количество игроков для завершения игры
@@ -378,7 +483,41 @@ public class Model implements Observable {
         return result;
     }
 
-    public int getMaximumNumberOfPlayers() {
-        return 10;
+    public void gameOver() {
+        notifyObservers(EventType.GAME_OVER, null);
+    }
+
+    public void mafiaWon() {
+        notifyObservers(EventType.GAME_ENDED, Map.of("winner", "мафия"));
+    }
+
+    public void civiliansWon() {
+        notifyObservers(EventType.GAME_ENDED, Map.of("winner", "мирные"));
+    }
+
+    /// Часть, отвечающая за отправку данных подписчикам
+
+    private final List<Observer> observerList = new ArrayList<>();
+
+    public void addObserver(Observer observer) {
+        observerList.add(observer);
+    }
+    public void removeObserver(Observer observer) {
+        observerList.remove(observer);
+    }
+    public List<Observer> getObservers() {
+        return observerList;
+    }
+
+    // Общаемся с подписчиками
+    public void notifyObservers(EventType type, Map<String, Object> data) {
+        for (Observer observer : observerList) {
+            observer.onGameEvent(type, data);
+        }
+    }
+
+    // Или с подписчиком
+    public void notifyConcreteObserver(Observer observer, EventType type, Map<String, Object> data) {
+        observer.onGameEvent(type, data);
     }
 }

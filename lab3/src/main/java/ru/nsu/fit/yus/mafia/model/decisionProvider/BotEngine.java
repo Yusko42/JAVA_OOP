@@ -78,7 +78,7 @@ public class BotEngine implements DecisionProvider {
         Player leastTrusted = chooseLowestTrust(self, otherPlayers);
 
         // Груповое подстрекательство против своих врагов
-        if (trustLevels.get(leastTrusted) < -0.7) {
+        if (trustLevels.get(leastTrusted) < -0.7 || !(leastTrusted.getPlayerRole().isMafia())) {
             MessageType type = MessageType.SUSPICION;
             String text = generateBotMessage(type, leastTrusted.getPlayerName());
             return new Message(self, leastTrusted, type, text);
