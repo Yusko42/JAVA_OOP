@@ -88,6 +88,7 @@ public class Model implements Observable {
         mes.put("player", playerName);
         mes.put("role", playerRole);
         notifyConcreteObserver(ob, EventType.PLAYER_ROLE_REVEALED, mes);
+        delay(3000);
     }
 
     // Обновляем список живых игроков, выводим его всем
@@ -148,10 +149,12 @@ public class Model implements Observable {
     public void startDay() {
         context.newDay();
         notifyObservers(EventType.DAY_STARTED, null);
+        delay(1000);
     }
     public void startNight() {
         context.newNight();
         notifyObservers(EventType.NIGHT_STARTED, null);
+        delay(1000);
     }
 
     /// НОЧЬ
@@ -175,7 +178,7 @@ public class Model implements Observable {
             mes.put("voter", mafiosi.getPlayerName());
             mes.put("voted", victim.getPlayerName());
             notifyObservers(EventType.MAFIA_VOTED, mes);
-            delay(3000);
+            delay(1000);
 
 
             if (!mafiosi.isBot())
@@ -188,6 +191,7 @@ public class Model implements Observable {
         // либо устраняют того, за кого проголосовало большинство,
         // либо определяет рандом
         possibleVictim = getMostVotedVictim(potentialVictims);
+        notifyObservers(EventType.VICTIM_CHOSEN, Map.of("victim", possibleVictim.getPlayerName()));
     }
 
     // Ночное патрулирование ШЕРИФА
@@ -196,7 +200,7 @@ public class Model implements Observable {
         if (!showLivingSheriff()) {
             return;
         }
-        delay(3000);
+        delay(1000);
 
         Player sheriff = context.getAliveSheriff();
         Player target = sheriff.getPlayerRole().nightAction(sheriff, context.getAlivePlayersExcept(sheriff));
@@ -205,6 +209,7 @@ public class Model implements Observable {
                 "target", target.getPlayerName(),
                 "isMafia", target.getPlayerRole().isMafia()
         ));
+        delay(2000);
 
         //Теперь он должен понять, мафия это или нет
         if (target.getPlayerRole().isMafia())
@@ -217,7 +222,7 @@ public class Model implements Observable {
         if (!showLivingDoctor()) {
             return;
         }
-        delay(3000);
+        delay(1000);
 
         Player doctor = context.getAliveDoctor();
         Player target = doctor.getPlayerRole().nightAction(doctor, context.getAlivePlayersExcept(doctor));
@@ -226,6 +231,8 @@ public class Model implements Observable {
         target.heal();
         if (possibleVictim == target)
             possibleVictim = null;
+        notifyObservers(EventType.PATIENT_CHOSEN, Map.of("patient", target.getPlayerName()));
+        delay(2000);
     }
 
     public void killPossibleVictim() {
@@ -247,9 +254,10 @@ public class Model implements Observable {
             mes.put("message", "Доброе утро! Сегодняшняя ночь была необыкновенно спокойной. Пока что...");
             notifyObservers(EventType.SHOW_MESSAGE, mes);
         }
+        delay(3000);
         // Выводим живых игроков
         showAllLivingPlayers();
-        delay(3000);
+        delay(1000);
     }
 
     public void lastWordOfTheMurdered() {
@@ -264,7 +272,7 @@ public class Model implements Observable {
                     double currentTrust = player.getTrustLevels().getOrDefault(suspect, 0.0);
 
                     // Не трогаем мафий, которые доверяют своему с 2.0
-                    if (player.getPlayerRole().isMafia() && currentTrust == 2.0) {
+                    if (player.getPlayerRole().isMafia() && suspect.getPlayerRole().isMafia()) {
                         continue;
                     }
 
@@ -287,7 +295,7 @@ public class Model implements Observable {
                     "player", possibleVictim.getPlayerName(),
                     "message", last_mes.getText()
             ));
-            delay(5000);
+            delay(2000);
 
         }
         possibleVictim = null;
@@ -330,11 +338,13 @@ public class Model implements Observable {
                         target.getTrustLevels()
                                 .put(author, Math.max(-1.0, target.getTrustLevels().get(author) - 0.08));
                         // МАФИЯ ГОТОВИТСЯ ПОДСТАВЛЯТЬ ОТВЕТЧИКА Б, УБИВАЯ А
-                        List<Player> mafiaMembers = context.getAliveMafia();
-                        for (Player mafia : mafiaMembers) {
-                            double currentTrust = mafia.getTrustLevels().getOrDefault(author, 0.0);
-                            if (currentTrust == 2.0) continue;
-                            mafia.getTrustLevels().put(author, Math.max(-1.0, currentTrust - 0.2));
+                        if (!author.getPlayerRole().isMafia()) {
+                            List<Player> mafiaMembers = context.getAliveMafia();
+                            for (Player mafia : mafiaMembers) {
+                                double currentTrust = mafia.getTrustLevels().getOrDefault(author, 0.0);
+                                if (currentTrust == 2.0) continue;
+                                mafia.getTrustLevels().put(author, Math.max(-1.0, currentTrust - 0.2));
+                            }
                         }
                     }
                 }
@@ -367,7 +377,7 @@ public class Model implements Observable {
 
             // ШЕРИФ ДОЛОЖИЛ О НАЛИЧИИ МАФИИ
             if (mes.getMessageType() == MessageType.SHERIFF_MAFIA_REPORT) {
-                Player author = mes.getAuthor(); // Шериф??
+                Player author = mes.getAuthor();
                 Player target = mes.getTarget();
 
                 if (target.getPlayerRole().isMafia()) {
@@ -390,7 +400,7 @@ public class Model implements Observable {
                     target.getTrustLevels().put(author, Math.max(-1.0, target.getTrustLevels().get(author) - 0.8));
                 }
             }
-
+            delay(1500);
             context.getMessageLog().get(context.getNumberOfStage()).add(mes);
         }
     }
@@ -410,6 +420,7 @@ public class Model implements Observable {
                         "voter", player.getPlayerName(),
                         "voted", suspect.getPlayerName()
                 ));
+                delay(1500);
             }
 
             // Теперь выбор городских проверяется:
@@ -419,6 +430,7 @@ public class Model implements Observable {
             if (victim != null) {
                 this.kill(victim);
                 notifyObservers(EventType.PLAYER_ELIMINATED, Map.of("player", victim.getPlayerName()));
+                delay(1000);
                 return;
             }
 
@@ -462,25 +474,11 @@ public class Model implements Observable {
 
     // Проверка: убито/посажено достаточное количество игроков для завершения игры
     public boolean isMafiaWon() {
-        boolean result = false;
-        if (context.getAliveMafia().size() >= context.getAliveCivilian().size()) {
-            Map<String, Object> data = new HashMap<>();
-            data.put("winner", "Mafia");
-            notifyObservers(EventType.GAME_ENDED, data);
-            result = context.getAliveMafia().size() >= context.getAliveCivilian().size();
-        }
-        return result;
+       return context.getAliveMafia().size() >= context.getAliveCivilian().size();
     }
 
     public boolean isCiviliansWon() {
-        boolean result = false;
-        if (context.getAliveMafia().isEmpty()) {
-            Map<String, Object> data = new HashMap<>();
-            data.put("winner", "Civilians");
-            notifyObservers(EventType.GAME_ENDED, data);
-            result = context.getAliveMafia().isEmpty();
-        }
-        return result;
+        return context.getAliveMafia().isEmpty();
     }
 
     public void gameOver() {
@@ -488,11 +486,11 @@ public class Model implements Observable {
     }
 
     public void mafiaWon() {
-        notifyObservers(EventType.GAME_ENDED, Map.of("winner", "мафия"));
+        notifyObservers(EventType.GAME_ENDED, Map.of("winner", "Mafia"));
     }
 
     public void civiliansWon() {
-        notifyObservers(EventType.GAME_ENDED, Map.of("winner", "мирные"));
+        notifyObservers(EventType.GAME_ENDED, Map.of("winner", "Civilians"));
     }
 
     /// Часть, отвечающая за отправку данных подписчикам

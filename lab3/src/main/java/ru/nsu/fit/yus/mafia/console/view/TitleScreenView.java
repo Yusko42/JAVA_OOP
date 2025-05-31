@@ -23,7 +23,7 @@ public class TitleScreenView {
         System.out.println("\n-- ROLES --");
         System.out.println("MAFIA     - Knows other mafia. Eliminates players at night.");
         System.out.println("CIVILIAN  - No special powers. Tries to find and vote out mafia.");
-        System.out.println("DOCTOR    - Can save one player each night (including themselves).");
+        System.out.println("DOCTOR    - Can save one player each night.");
         System.out.println("DETECTIVE - Can check if one player is mafia each night.");
 
         System.out.println("\nWork together, trust no one... and survive.");
@@ -35,8 +35,8 @@ public class TitleScreenView {
         System.out.println("(c) Java Adaptation by @yusk42            2025");
         System.out.println("\n");
         System.out.println("The program is a free implementation of 'Mafia', a social deduction game created by Dimitry Davidoff.");
-        System.out.println("The creator of this implementation does not claim intellectual property rights of the creators ");
-        System.out.println("and owners of the trademark.");
+        System.out.println("The creator of this implementation does not claim intellectual property rights of");
+        System.out.println("authors and owners of the trademark.");
         System.out.println("The software is freeware. If you paid for it, you have been SCAMMED!");
     }
     public void showInvalidInput() {

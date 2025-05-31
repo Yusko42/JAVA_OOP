@@ -48,9 +48,7 @@ public class ConsoleController implements Controller {
             model.mafiaWon();
         } else if (model.isCiviliansWon()) {
             model.civiliansWon();
-        } else
-            System.out.println("Something else happened!");
-
+        } //else System.out.println("Something else happened!");
     }
 
     private void gameStart() {

@@ -1,23 +1,16 @@
 package ru.nsu.fit.yus.mafia.console.view;
-/*
-import ru.nsu.fit.yus.mafia.model.Player;
-import ru.nsu.fit.yus.mafia.model.messages.LastWord;
-import ru.nsu.fit.yus.mafia.model.messages.Message;
-*/
 
 import ru.nsu.fit.yus.mafia.EventType;
 import ru.nsu.fit.yus.mafia.Observer;
 import ru.nsu.fit.yus.mafia.model.Model;
 import ru.nsu.fit.yus.mafia.model.Player;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class ConsoleView implements Observer {
     private Player subscriber; // для фильтрации
-    private List<String> livingPlayers = new ArrayList<>(); // сохраняем список живых
 
     // Создаем подписчика в лице ConsoleView
     public ConsoleView (Model model) {
@@ -34,9 +27,9 @@ public class ConsoleView implements Observer {
         switch (type) {
             case GAME_STARTED -> displayGameStart();
             case NIGHT_STARTED -> displayNightStart();
-            case NIGHT_ENDED -> displayNightEnd();
             case DAY_STARTED -> displayDayStart();
             case SHERIFF_CHECK -> displaySheriffInvestigation((String) data.get("player"), (boolean) data.get("isMafia"));
+            case PATIENT_CHOSEN -> displayDoctorChosen((String) data.get("patient"));
             case PLAYER_KILLED -> displayPlayerKilled((String) data.get("player"));
             case PLAYER_SPOKEN -> displayPlayerSpoken((String) data.get("player"), (String) data.get("message"));
             case PLAYER_VOTED -> displayVote((String) data.get("voter"), (String) data.get("voted"));
@@ -66,10 +59,6 @@ public class ConsoleView implements Observer {
 
     private void displayNightStart() {
         System.out.println("🌙 Наступает ночь...");
-    }
-
-    private void displayNightEnd() {
-        System.out.println("☀️ Ночь закончилась.");
     }
 
     private void displayDayStart() {
@@ -114,11 +103,11 @@ public class ConsoleView implements Observer {
         System.out.println("🏁 Игра окончена! Увы, вы были убиты.");
     }
 
-    private void displayTrustUpdate(Map<String, Double> trustMap) {
+    /*private void displayTrustUpdate(Map<String, Double> trustMap) {
         System.out.println("📊 Уровень доверия:");
         trustMap.forEach((player, trust) ->
                 System.out.printf(" - %s: %.2f%n", player, trust));
-    }
+    }*/
 
     private void displayPlayerRole(String player, String role) {
         System.out.println("🕵️ " + player + ", ваша роль: " + role);
@@ -141,7 +130,7 @@ public class ConsoleView implements Observer {
     }
 
     private void updateLivingPlayers(List<String> players) {
-        this.livingPlayers = players;
+        // сохраняем список живых
         System.out.println("Живые игроки:");
         displayLivingPlayers(players);
     }
@@ -177,6 +166,12 @@ public class ConsoleView implements Observer {
         if (subscriber.getPlayerRole().isDoctor()) {
             System.out.println("Доктор: ");
             displayLivingPlayers(Collections.singletonList(doctor));
+        }
+    }
+
+    private void displayDoctorChosen(String target) {
+        if (subscriber.getPlayerRole().isDoctor()) {
+            System.out.println("Доктор выбрал пациента: " + target);
         }
     }
 
