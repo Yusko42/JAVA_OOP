@@ -1,7 +1,9 @@
 package ru.nsu.fit.yus.mafia.gui.view;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.Objects;
 
 public class TitleScreenView extends JFrame {
@@ -10,8 +12,6 @@ public class TitleScreenView extends JFrame {
     private final JButton legalInfoButton = new JButton("Legal Information");
     private final JButton helpButton = new JButton("Help");
     private final JButton exitButton = new JButton("Exit");
-
-    private final JLabel imageLabel = new JLabel();  // для картинки
 
     public TitleScreenView() {
         super("MAFIA — Title Screen");
@@ -27,14 +27,8 @@ public class TitleScreenView extends JFrame {
         // Панель для названия игры (центр сверху)
         JPanel titlePanel = new JPanel(new BorderLayout());
         titlePanel.setBackground(Color.BLACK);
-        titlePanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
 
-        /*JLabel titleLabel1 = new JLabel("Welcome to the world of...", JLabel.CENTER);
-        titleLabel1.setFont(new Font("Gilroy", Font.BOLD, 16));
-        titleLabel1.setOpaque(true); // делаем экземпляр непрозрачным (false - полная прозрачность)
-        titleLabel1.setBackground(Color.BLACK);
-        titleLabel1.setForeground(new Color(232, 225, 225)); // Собственный цвет текста
-*/
         JLabel titleLabel = new JLabel("MAFIA", JLabel.CENTER);
         titleLabel.setFont(new Font("Bernard MT Condensed", Font.BOLD, 48));
         titleLabel.setForeground(Color.lightGray); // Собственный цвет текста
@@ -43,14 +37,11 @@ public class TitleScreenView extends JFrame {
         // Добавляем заголовок в северную часть основного layout
         add(titlePanel, BorderLayout.NORTH);
 
-        //titleLabel2.setOpaque(true); // делаем экземпляр непрозрачным (false - полная прозрачность)
-        //titleLabel2.setBackground(Color.BLACK);
-
         // Панель для кнопок (справа)
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS)); // сверху вниз раасполагать
         buttonPanel.setBackground(Color.BLACK);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 50));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(50, 50, 0, 0));
 
         // Устанавливаем характеристики кнопкам
         styleButton(newGameButton);
@@ -66,7 +57,7 @@ public class TitleScreenView extends JFrame {
         addButton(buttonPanel, exitButton);
 
         // Добавляем кнопки в восточную часть
-        add(buttonPanel, BorderLayout.EAST);
+        add(buttonPanel, BorderLayout.WEST);
     }
 
     private void setIcon() {
@@ -77,11 +68,22 @@ public class TitleScreenView extends JFrame {
 
     private void setImage() {
         try {
-            String imagePath = "/ru/nsu/fit/yus/mafia/title_mafia.jpg";
-            ImageIcon icon = new ImageIcon(Objects.requireNonNull(getClass().getResource(imagePath)));
-            JLabel imageLabel = new JLabel(icon);
-            imageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-            add(imageLabel, BorderLayout.WEST);
+            String imagePath = "/ru/nsu/fit/yus/mafia/title_mafia.png";
+            BufferedImage originalImage = ImageIO.read(Objects.requireNonNull(getClass().getResource(imagePath)));
+
+            int targetWidth = (int) (getWidth() * 0.5);
+            int targetHeight = (int) (originalImage.getHeight() * ((double) targetWidth / originalImage.getWidth()));
+
+            // Масштабируем
+            Image scaledImage = originalImage.getScaledInstance(
+                    targetWidth,
+                    targetHeight,
+                    Image.SCALE_SMOOTH
+            );
+
+            JLabel imageLabel = new JLabel(new ImageIcon(scaledImage));
+            imageLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 0));
+            add(imageLabel, BorderLayout.EAST);
         } catch (Exception e) {
             System.out.println("Problem: " + e.getMessage()); // если проблема с файлом картинки
         }
@@ -91,14 +93,44 @@ public class TitleScreenView extends JFrame {
         button.setForeground(Color.WHITE);
         button.setBackground(Color.BLACK);
         button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        button.setMaximumSize(new Dimension(200, 30));
+        button.setMaximumSize(new Dimension(300, 30));
         button.setFont(new Font("Gilroy", Font.PLAIN, 16));
     }
 
     private void addButton(JPanel buttonPanel, JButton button) {
-        buttonPanel.add(Box.createVerticalStrut(20));
+        buttonPanel.add(Box.createVerticalStrut(40));
         buttonPanel.add(button);
     }
+
+    // Во время ввода данных:
+    public String displayEnterYourName() {
+        return JOptionPane.showInputDialog(this,
+                "Enter your name: ",
+                "Game Setup",
+                JOptionPane.QUESTION_MESSAGE);
+    }
+
+    public String displayEnterTheNumberOfPlayers() {
+        return JOptionPane.showInputDialog(this,
+                "Enter the number of players (6-10):",
+                "Game Setup",
+                JOptionPane.QUESTION_MESSAGE);
+    }
+
+    public void displayInvalidNameInput() {
+        JOptionPane.showMessageDialog(this,
+                "You have not entered your name! Please try again.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void displayInvalidNumberInput() {
+        JOptionPane.showMessageDialog(this,
+                "Invalid input! Please enter a number between 6 and 10.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
+
 
     // Геттеры для кнопок
     public JButton getNewGameButton() {

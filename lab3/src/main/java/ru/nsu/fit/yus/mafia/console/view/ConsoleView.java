@@ -54,19 +54,19 @@ public class ConsoleView implements Observer {
     }
 
     private void displayGameStart() {
-        System.out.println("Игра началась!");
+        System.out.println("The game is on!");
     }
 
     private void displayNightStart() {
-        System.out.println("🌙 Наступает ночь...");
+        System.out.println("🌙 Night falls...");
     }
 
     private void displayDayStart() {
-        System.out.println("🌞 Наступил день.");
+        System.out.println("🌞 The dawn came.");
     }
 
     private void displayPlayerKilled(String player) {
-        System.out.println("💀 Ночью убит игрок: " + player);
+        System.out.println("💀 The player was killed at night: " + player);
     }
 
     private void displayPlayerSpoken(String player, String message) {
@@ -74,33 +74,33 @@ public class ConsoleView implements Observer {
     }
 
     private void displayVote(String voter, String voted) {
-        System.out.println("🗳️ " + voter + " голосует за " + voted);
+        System.out.println("🗳️ " + voter + "  votes for " + voted);
     }
 
 
     // ВИДНО ТОЛЬКО ЧЛЕНАМ МАФИИ
     private void displayMafiaVote(String voter, String voted) {
         if (subscriber.getPlayerRole().isMafia()) {
-            System.out.println("Мафиозо " + voter + " голосует за " + voted);
+            System.out.println("Mafioso " + voter + " votes for " + voted);
         }
     }
 
     private void displayMafiaDecision(String victim) {
         if (subscriber.getPlayerRole().isMafia()) {
-            System.out.println("По итогам была выбрана жертва: " + victim);
+            System.out.println("The victim was chosen: " + victim);
         }
     }
 
     private void displayElimination(String player) {
-        System.out.println("❌ По итогам голосования исключён игрок: " + player);
+        System.out.println("❌ According to the results of the vote, the player is excluded: " + player);
     }
 
     private void displayGameEnd(String winner) {
-        System.out.println("🏁 Игра окончена! Победила команда: " + winner);
+        System.out.println("🏁 Game over! The team won: " + winner);
     }
 
     private void displayGameOver() {
-        System.out.println("🏁 Игра окончена! Увы, вы были убиты.");
+        System.out.println("🏁 Game over! Alas, you were killed.");
     }
 
     /*private void displayTrustUpdate(Map<String, Double> trustMap) {
@@ -110,12 +110,12 @@ public class ConsoleView implements Observer {
     }*/
 
     private void displayPlayerRole(String player, String role) {
-        System.out.println("🕵️ " + player + ", ваша роль: " + role);
+        System.out.println("🕵️ " + player + ", your role: " + role);
     }
 
     private void displayMessageOptions(Player player, List<String> options) {
         if (player != subscriber) { return; }
-        System.out.println("💬 Варианты ответа:");
+        System.out.println("💬 Answer options:");
         for (int i = 0; i < options.size(); i++) {
             System.out.printf("  [%d] %s%n", i + 1, options.get(i));
         }
@@ -123,7 +123,7 @@ public class ConsoleView implements Observer {
 
     private void displayTargetChoices(Player player, List<String> targets) {
         if (player != subscriber) { return; } //Выходим, если сообщение предназначено не нам
-        System.out.println("🎯 " + player.getPlayerName() + ", выберите цель:");
+        System.out.println("🎯 " + player.getPlayerName() + ", choose the target:");
         for (int i = 0; i < targets.size(); i++) {
             System.out.printf("  [%d] %s%n", i + 1, targets.get(i));
         }
@@ -131,7 +131,7 @@ public class ConsoleView implements Observer {
 
     private void updateLivingPlayers(List<String> players) {
         // сохраняем список живых
-        System.out.println("Живые игроки:");
+        System.out.println("Living players:");
         displayLivingPlayers(players);
     }
 
@@ -139,7 +139,7 @@ public class ConsoleView implements Observer {
     // ТОЛЬКО МАФИИ
     private void displayLivingMafia(List<String> mafiaMembers) {
         if (subscriber.getPlayerRole().isMafia()) {
-            System.out.println("Просыпается мафия: ");
+            System.out.println("The mafia wakes up: ");
             displayLivingPlayers(mafiaMembers);
         }
     }
@@ -147,7 +147,7 @@ public class ConsoleView implements Observer {
     // ТОЛЬКО ШЕРИФУ
     private void displayLivingSheriff(String sheriff) {
         if (subscriber.getPlayerRole().isSheriff()) {
-            System.out.println("Шериф: ");
+            System.out.println("Sheriff wakes up: ");
             displayLivingPlayers(Collections.singletonList(sheriff));
         }
     }
@@ -155,23 +155,23 @@ public class ConsoleView implements Observer {
     public void displaySheriffInvestigation(String target, boolean isMafia) {
         if (subscriber.getPlayerRole().isSheriff()) {
             if (isMafia)
-                System.out.println(target + " - мафия!");
+                System.out.println(target + " is a mafia member!");
             else
-                System.out.println(target + " - не мафия.");
+                System.out.println(target + " is not a mafia member.");
         }
     }
 
     // ТОЛЬКО ДОКТОРУ
     private void displayLivingDoctor(String doctor) {
         if (subscriber.getPlayerRole().isDoctor()) {
-            System.out.println("Доктор: ");
+            System.out.println("Doctor wakes up: ");
             displayLivingPlayers(Collections.singletonList(doctor));
         }
     }
 
     private void displayDoctorChosen(String target) {
         if (subscriber.getPlayerRole().isDoctor()) {
-            System.out.println("Доктор выбрал пациента: " + target);
+            System.out.println("The doctor chose the patient: " + target);
         }
     }
 
@@ -182,7 +182,7 @@ public class ConsoleView implements Observer {
     }
 
     private void displayLastWord(String player, String message) {
-        System.out.printf("🗣 Последнее слово %s: \"%s\"%n", player, message);
+        System.out.printf("🗣 The last word of the player %s: \"%s\"%n", player, message);
     }
 
     private void displayMessage(String message) {
@@ -190,11 +190,11 @@ public class ConsoleView implements Observer {
     }
 
     private void displayNewVote() {
-        System.out.println("Итог неоднозначен, назначаем повторное голосование!");
+        System.out.println("The result is ambiguous, a repeat vote is assigned!");
     }
 
     private void displayNobodyPrisoned() {
-        System.out.println("По итогам голосования никто не был исключён!");
+        System.out.println("According to the results of the vote, no one was excluded!");
     }
 
 }

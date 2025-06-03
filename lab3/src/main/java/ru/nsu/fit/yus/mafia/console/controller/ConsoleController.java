@@ -154,7 +154,6 @@ public class ConsoleController implements Controller {
         List<String> options = new ArrayList<>();
 
         for (int i = 0; i < types.length; i++) {
-            //view.showMessage((i + 1) + ". " + generateMessage(types[i], "#"));
             options.add((i + 1) + ". " + generateMessage(types[i], "#"));
         }
 
@@ -196,7 +195,6 @@ public class ConsoleController implements Controller {
         return requestPlayerMessage(self, context);
     }
 
-    // Надо потом прописать отдельно???
     public Message requestShefiffMessage(Player self, GameContext context) {
         return requestPlayerMessage(self, context);
     }

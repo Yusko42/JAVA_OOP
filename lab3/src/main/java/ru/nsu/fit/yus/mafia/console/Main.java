@@ -1,5 +1,6 @@
 package ru.nsu.fit.yus.mafia.console;
 
+import ru.nsu.fit.yus.mafia.PlayerData;
 import ru.nsu.fit.yus.mafia.console.controller.ConsoleController;
 import ru.nsu.fit.yus.mafia.console.controller.TitleScreenController;
 import ru.nsu.fit.yus.mafia.console.view.ConsoleView;

@@ -1,6 +1,6 @@
 package ru.nsu.fit.yus.mafia.console.controller;
 
-import ru.nsu.fit.yus.mafia.console.PlayerData;
+import ru.nsu.fit.yus.mafia.PlayerData;
 import ru.nsu.fit.yus.mafia.console.view.TitleScreenView;
 
 import java.util.Scanner;
@@ -36,14 +36,17 @@ public class TitleScreenController {
     public PlayerData startGame() {
         view.showEnterThePlayersName();
         String name = input.nextLine().trim();
+        if (name.isEmpty()) {
+            name = "Player"; // Значение по умолчанию
+        }
 
         view.showEnterTheNumberOfPlayers();
         int number;
 
         while (true) {
-            String number_str = input.nextLine().trim();
+            String numberStr = input.nextLine().trim();
             try {
-                number = Integer.parseInt(number_str);
+                number = Integer.parseInt(numberStr);
                 if ((number > 5) && (number < 11))
                     break;
                 else

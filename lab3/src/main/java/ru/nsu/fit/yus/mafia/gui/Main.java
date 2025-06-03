@@ -8,9 +8,12 @@ import javax.swing.*;
 public class Main {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            TitleScreenView view = new TitleScreenView();
-            TitleScreenController controller = new TitleScreenController(view);
-            controller.show();
+            GameLauncher gameLauncher = new GameLauncher();
+            TitleScreenView titleView = new TitleScreenView();
+
+
+            TitleScreenController titleController = new TitleScreenController(titleView, gameLauncher);
+            titleController.show();
         });
     }
 }

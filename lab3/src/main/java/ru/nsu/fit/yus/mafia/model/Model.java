@@ -88,7 +88,7 @@ public class Model implements Observable {
         mes.put("player", playerName);
         mes.put("role", playerRole);
         notifyConcreteObserver(ob, EventType.PLAYER_ROLE_REVEALED, mes);
-        delay(3000);
+        delay(1000);
     }
 
     // Обновляем список живых игроков, выводим его всем
@@ -206,7 +206,7 @@ public class Model implements Observable {
         Player target = sheriff.getPlayerRole().nightAction(sheriff, context.getAlivePlayersExcept(sheriff));
 
         notifyObservers(EventType.SHERIFF_CHECK, Map.of(
-                "target", target.getPlayerName(),
+                "player", target.getPlayerName(),
                 "isMafia", target.getPlayerRole().isMafia()
         ));
         delay(2000);
@@ -251,7 +251,7 @@ public class Model implements Observable {
             notifyObservers(EventType.PLAYER_KILLED, mes);
         }
         else {
-            mes.put("message", "Доброе утро! Сегодняшняя ночь была необыкновенно спокойной. Пока что...");
+            mes.put("message", "Good morning! This night has been unusually calm. So far...");
             notifyObservers(EventType.SHOW_MESSAGE, mes);
         }
         delay(3000);

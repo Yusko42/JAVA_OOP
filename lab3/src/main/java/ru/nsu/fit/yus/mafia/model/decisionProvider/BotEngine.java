@@ -118,7 +118,7 @@ public class BotEngine implements DecisionProvider {
         Map<Player, Double> trustLevels = self.getTrustLevels();
         List<Player> otherPlayers = context.getAlivePlayersExcept(self);
 
-        double suspicionThreshold = -0.6;
+        double suspicionThreshold = -0.3;
         Player leastTrusted = chooseLowestTrust(self, otherPlayers);
 
         LastWordType type;
