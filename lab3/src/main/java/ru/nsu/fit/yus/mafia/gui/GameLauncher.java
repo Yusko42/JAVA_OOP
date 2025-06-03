@@ -1,6 +1,5 @@
 package ru.nsu.fit.yus.mafia.gui;
 
-import ru.nsu.fit.yus.mafia.Observer;
 import ru.nsu.fit.yus.mafia.PlayerData;
 import ru.nsu.fit.yus.mafia.gui.controller.GuiController;
 import ru.nsu.fit.yus.mafia.gui.view.GuiObserver;

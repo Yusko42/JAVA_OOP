@@ -35,8 +35,9 @@ public class Model implements Observable {
 
         // 5. Старт, вывод на экран всех игроков
         notifyObservers(EventType.GAME_STARTED, null);
+        delay(2000);
         showAllLivingPlayers();
-        delay(5000);
+        delay(2000);
     }
 
     /// Сколько мафиози, в каком (случайном) порядке - всё здесь
@@ -149,12 +150,12 @@ public class Model implements Observable {
     public void startDay() {
         context.newDay();
         notifyObservers(EventType.DAY_STARTED, null);
-        delay(1000);
+        delay(2000);
     }
     public void startNight() {
         context.newNight();
         notifyObservers(EventType.NIGHT_STARTED, null);
-        delay(1000);
+        delay(3000);
     }
 
     /// НОЧЬ
@@ -192,6 +193,7 @@ public class Model implements Observable {
         // либо определяет рандом
         possibleVictim = getMostVotedVictim(potentialVictims);
         notifyObservers(EventType.VICTIM_CHOSEN, Map.of("victim", possibleVictim.getPlayerName()));
+        delay(3000);
     }
 
     // Ночное патрулирование ШЕРИФА
@@ -209,7 +211,7 @@ public class Model implements Observable {
                 "player", target.getPlayerName(),
                 "isMafia", target.getPlayerRole().isMafia()
         ));
-        delay(2000);
+        delay(3000);
 
         //Теперь он должен понять, мафия это или нет
         if (target.getPlayerRole().isMafia())
@@ -295,7 +297,7 @@ public class Model implements Observable {
                     "player", possibleVictim.getPlayerName(),
                     "message", last_mes.getText()
             ));
-            delay(2000);
+            delay(4000);
 
         }
         possibleVictim = null;
@@ -437,9 +439,11 @@ public class Model implements Observable {
             attempts++;
             if (attempts < 3) {
                 notifyObservers(EventType.NEW_VOTE, null); // запустить новое голосование
+                delay(3000);
             }
         }
         notifyObservers(EventType.NOBODY_PRISONED, null);
+        delay(3000);
     }
 
 

@@ -3,15 +3,13 @@ package ru.nsu.fit.yus.mafia.gui.view;
 import ru.nsu.fit.yus.mafia.model.Player;
 import ru.nsu.fit.yus.mafia.model.messages.LastWordType;
 import ru.nsu.fit.yus.mafia.model.messages.MessageType;
-import ru.nsu.fit.yus.mafia.model.roles.Doctor;
-import ru.nsu.fit.yus.mafia.model.roles.Mafia;
-import ru.nsu.fit.yus.mafia.model.roles.Role;
-import ru.nsu.fit.yus.mafia.model.roles.Sheriff;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.Timer;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
@@ -19,23 +17,28 @@ import java.util.List;
 public class GuiView extends JFrame {
     private JPanel playersPanel;
     private JLabel timeIconLabel;
+    private JPanel topPanel;
+    private JPanel dayIconPanel;
+    private JLabel titleLabel;
+    private JPanel titlePanel;
     private final Map<String, JPanel> playerPanels = new HashMap<>();
     private final Map<String, JLabel> iconLabels = new HashMap<>();
-    private final List<String> playersList = new ArrayList<>();
+    private final Map<String, JTextField> speechFields = new HashMap<>();
+    private final Map<String, JPanel> centerPanels = new HashMap<>();
 
-    private Set<String> activeRolePlayers = new HashSet<>(); // Имена игроков, чьи панели сейчас активны
-    private boolean isNightPhase = false;
+    private final List<String> playersList = new ArrayList<>();
 
 
     public GuiView() {
         super("MAFIA — The Game");
         setIcon();
-        setSize(800, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(800, 800);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(Color.WHITE);
 
         setupLayout();
+        setupWindowListener();
     }
 
      private void setIcon() {
@@ -48,19 +51,19 @@ public class GuiView extends JFrame {
         setLayout(new BorderLayout(10, 10));
 
         // TOP PANEL
-        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel = new JPanel(new BorderLayout());
 
         // Панель с иконкой времени суток
-        timeIconLabel = new JLabel(); // оставим пустым — установим позже
-        JPanel dayIconPanel = new JPanel();
+        timeIconLabel = new JLabel();
+        dayIconPanel = new JPanel();
         dayIconPanel.add(timeIconLabel);
         topPanel.add(dayIconPanel, BorderLayout.WEST);
 
         // Панель с заголовком
-        JLabel titleLabel = new JLabel("MAFIA");
+        titleLabel = new JLabel("MAFIA");
         titleLabel.setFont(new Font("Bernard MT Condensed", Font.BOLD, 48));
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel = new JPanel(new BorderLayout());
         titlePanel.add(titleLabel, BorderLayout.CENTER);
         topPanel.add(titlePanel, BorderLayout.CENTER);
 
@@ -79,7 +82,7 @@ public class GuiView extends JFrame {
         playersList.add(name);
         JPanel playerRow = new JPanel(new BorderLayout(5, 5));
 
-        JLabel iconLabel = new JLabel(new ImageIcon(Objects.requireNonNull(loadIcon("/ru/nsu/fit/yus/mafia/civilian.png"))));
+        JLabel iconLabel = new JLabel(getDefaultIcon());
         JLabel nameLabel = new JLabel(name);
         JTextField speechField = new JTextField("");
         JLabel voteLabel = new JLabel("Vote: -");
@@ -92,9 +95,33 @@ public class GuiView extends JFrame {
         playerRow.add(iconLabel, BorderLayout.WEST);
         playerRow.add(centerPanel, BorderLayout.CENTER);
 
+        centerPanels.put(name, centerPanel);
         playersPanel.add(playerRow);
         playerPanels.put(name, playerRow);
         iconLabels.put(name, iconLabel);
+        speechFields.put(name, speechField);
+    }
+
+    public void removePlayer(String name) {
+        // 1. Удаляем из playerPanels и получаем панель
+        JPanel row = playerPanels.remove(name);
+
+        // 2. Проверяем, что игрок существовал
+        if (row == null) {
+            System.err.println("Player not found: " + name); // на скорую руку сделал, прошу не ругать
+            return;
+        }
+
+        // 3. Удаляем из всех связанных коллекций
+        playersPanel.remove(row);
+        iconLabels.remove(name);
+        playersList.remove(name);
+
+        // 4. Обновляем UI
+        playersPanel.revalidate();
+        playersPanel.repaint();
+
+        changeScreen();
     }
 
     public void setPlayerSpeech(String name, String message) {
@@ -102,6 +129,11 @@ public class GuiView extends JFrame {
         if (row != null) {
             JTextField speechField = (JTextField) ((JPanel) row.getComponent(1)).getComponent(1);
             speechField.setText(message);
+
+            Timer timer = new Timer(12000, _ -> speechField.setText(""));
+            timer.setRepeats(false);
+            timer.start();
+            changeScreen();
         }
         //changeScreen();
     }
@@ -111,21 +143,12 @@ public class GuiView extends JFrame {
         if (row != null) {
             JLabel voteLabel = (JLabel) ((JPanel) row.getComponent(1)).getComponent(2);
             voteLabel.setText("Vote: " + toPlayer);
-            changeScreen();
+            //changeScreen();
 
-            Timer timer = new Timer(3000, _ -> voteLabel.setText("Vote: -"));
+            Timer timer = new Timer(12000, _ -> voteLabel.setText("Vote: -"));
             timer.setRepeats(false);
             timer.start();
             changeScreen();
-        }
-        //changeScreen();
-    }
-
-    public void removePlayer(String name) {
-        JPanel row = playerPanels.remove(name);
-        if (row != null) {
-            playersPanel.remove(row);
-            iconLabels.remove(name);
         }
         //changeScreen();
     }
@@ -156,93 +179,93 @@ public class GuiView extends JFrame {
     ///  ВХОД В НОЧНОЙ РЕЖИМ
 
     public void enterNightMode() {
-        // Установка тёмного фона
-        playersPanel.setBackground(Color.DARK_GRAY);
-        getContentPane().setBackground(Color.DARK_GRAY);
+        setNightMode(); // Устанавливаем ночную иконку
+        clearAllMessages();
 
-        // Иконка луны
-        setNightMode();
+        topPanel.setBackground(new Color(42, 42, 53));
+        dayIconPanel.setBackground(new Color(42, 42, 53));
+        titlePanel.setBackground(new Color(42, 42, 53));
+        titleLabel.setForeground(Color.WHITE);
 
-        Set<String> nightSet = new HashSet<>(playersList);
-
-        for (Map.Entry<String, JPanel> entry : playerPanels.entrySet()) {
-            String name = entry.getKey();
-            JPanel panel = entry.getValue();
-            JLabel icon = iconLabels.get(name);
-
-            if (nightSet.contains(name)) {
-                panel.setBackground(new Color(60, 60, 60));
-                panel.setOpaque(true);
-
-                // Выбор иконки в зависимости от класса роли
-                //String roleIconPath = getNightIconForRole(role);
-                //icon.setIcon(new ImageIcon(Objects.requireNonNull(loadIcon(roleIconPath))));
-            } else {
-                panel.setBackground(Color.DARK_GRAY);
-                //icon.setIcon(toGrayscale(icon.getIcon()));
-            }
+        // Затемняем всех игроков
+        for (JPanel panel : playerPanels.values()) {
+            panel.setBackground(Color.BLACK);
         }
-
-        //changeScreen();
-    }
-
-    public void highlightPlayersByRole(Class<? extends Role> roleClass) {
-        activeRolePlayers.clear();
-        for (Map.Entry<String, JPanel> entry : playerPanels.entrySet()) {
-            String name = entry.getKey();
-            Role role = playerRoles.get(name); // Предполагаем, что playerRoles хранит соответствие имён и ролей
-
-            if (roleClass.isInstance(role)) {
-                activeRolePlayers.add(name);
-                // Подсветка панели
-                entry.getValue().setBackground(new Color(80, 80, 80)); // Тёмно-серый
-                iconLabels.get(name).setIcon(new ImageIcon(getRoleIcon(role))); // Иконка роли
-            }
+        for (JLabel icon : iconLabels.values()) {
+            icon.setIcon(getDefaultNightIcon());
+        }
+        for (JTextField field : speechFields.values()) {
+            field.setBackground(Color.WHITE);
+        }
+        for (JPanel panel : centerPanels.values()) {
+            panel.setBackground(Color.lightGray);
         }
     }
 
     public void darkenAllPlayers() {
+        clearAllMessages(); // Очищаем сообщения
         for (Map.Entry<String, JPanel> entry : playerPanels.entrySet()) {
             String name = entry.getKey();
-            if (!activeRolePlayers.contains(name)) {
-                entry.getValue().setBackground(Color.BLACK); // Полное затемнение
-                iconLabels.get(name).setIcon(null); // Скрываем иконку
-            }
+            entry.getValue().setBackground(Color.BLACK); // Полное затемнение
+            iconLabels.get(name).setIcon(getDefaultNightIcon()); // Скрываем иконку
         }
     }
 
-    private String getNightIconForRole(Role role) {
-        if (role instanceof Mafia) return "/ru/nsu/fit/yus/mafia/mafia1.png";
-        if (role instanceof Doctor) return "/ru/nsu/fit/yus/mafia/doctor.png";
-        if (role instanceof Sheriff) return "/ru/nsu/fit/yus/mafia/sheriff.png";
-        return "/ru/nsu/fit/yus/mafia/civilian.png";
+    public void clearAllMessages() {
+        for (String player : playersList) {
+            JPanel row = playerPanels.get(player);
+            JTextField speechLabel = (JTextField) ((JPanel) row.getComponent(1)).getComponent(1);
+            speechLabel.setText("");
+            JLabel voteLabel = (JLabel) ((JPanel) row.getComponent(1)).getComponent(2);
+            voteLabel.setText("Vote: -");
+        }
     }
+
 
     public void exitNightMode() {
-        getContentPane().setBackground(Color.WHITE);
-        playersPanel.setBackground(Color.WHITE);
         setDayMode();
+        topPanel.setBackground(Color.WHITE);
+        dayIconPanel.setBackground(Color.WHITE);
+        titlePanel.setBackground(Color.WHITE);
+        titleLabel.setForeground(Color.BLACK);
 
+        clearAllMessages();
+
+        // Восстанавливаем стандартный вид
+        playersPanel.setBackground(Color.WHITE);
         for (Map.Entry<String, JPanel> entry : playerPanels.entrySet()) {
-            JPanel panel = entry.getValue();
-            panel.setBackground(Color.WHITE);
-            panel.setOpaque(true);
-
-            String name = entry.getKey();
-            JLabel icon = iconLabels.get(name);
-            Image original = loadIcon("/ru/nsu/fit/yus/mafia/civilian.png"); // зависит от модели
-            icon.setIcon(new ImageIcon(original));
+            entry.getValue().setBackground(Color.WHITE);
+            iconLabels.get(entry.getKey()).setIcon(getDefaultIcon());
         }
-
-        //changeScreen();
-    }
-
-    public void setPlayerIcon(String name, Image image) {
-        JLabel iconLabel = iconLabels.get(name);
-        if (iconLabel != null) {
-            iconLabel.setIcon(new ImageIcon(image));
+        for (JTextField field : speechFields.values()) {
+            field.setBackground(Color.WHITE);
+            field.setForeground(Color.BLACK);
+        }
+        for (JPanel panel : centerPanels.values()) {
+            panel.setBackground(Color.lightGray);
         }
     }
+
+    public ImageIcon getDefaultIcon() {
+        return new ImageIcon(Objects.requireNonNull(loadIcon("/ru/nsu/fit/yus/mafia/civilian.png")));
+    }
+
+    public ImageIcon getMafiaNightIcon() {
+        return new ImageIcon(Objects.requireNonNull(loadIcon("/ru/nsu/fit/yus/mafia/mafia1.png")));
+    }
+
+    public ImageIcon getSheriffNightIcon() {
+        return new ImageIcon(Objects.requireNonNull(loadIcon("/ru/nsu/fit/yus/mafia/sheriff.png")));
+    }
+
+    public ImageIcon getDoctorNightIcon() {
+        return new ImageIcon(Objects.requireNonNull(loadIcon("/ru/nsu/fit/yus/mafia/doctor.png")));
+    }
+
+    public ImageIcon getDefaultNightIcon() {
+        return new ImageIcon(Objects.requireNonNull(loadIcon("/ru/nsu/fit/yus/mafia/night.png")));
+    }
+
 
     private Image loadIcon(String path) {
         try {
@@ -313,7 +336,7 @@ public class GuiView extends JFrame {
         targetComboBox.setVisible(false);
 
         // показывать цель только если выбран NAME_THE_KILLER
-        typeComboBox.addActionListener(e -> {
+        typeComboBox.addActionListener(_ -> {
             LastWordType selected = (LastWordType) typeComboBox.getSelectedItem();
             boolean needsTarget = selected == LastWordType.NAME_THE_KILLER;
             targetLabel.setVisible(needsTarget);
@@ -357,59 +380,123 @@ public class GuiView extends JFrame {
     // Все методы package-private
     void displayGameStart() {
         //exitNightMode();
-        JOptionPane.showMessageDialog(this,
+        JOptionPane optionPane = new JOptionPane(
+                "Game start! Please wait...",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        JDialog dialog = optionPane.createDialog("Start");
+        Timer timer = new Timer(1500, _ -> dialog.dispose());
+
+        timer.setRepeats(false);
+        timer.start();
+
+        dialog.setVisible(true);
+        /*JOptionPane.showMessageDialog(this,
                 "Game starts!",
                 "Start",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE);*/
     }
 
     void displayNightStart() {
         enterNightMode();
-        JOptionPane.showMessageDialog(this,
+        /*JOptionPane.showMessageDialog(this,
                 "Night falls...",
                 "Night",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE);*/
+        timeDialog("Night falls...");
+
     }
 
     void displayDayStart() {
         exitNightMode();
-        JOptionPane.showMessageDialog(this,
+        /*JOptionPane.showMessageDialog(this,
                 "The dawn came.",
                 "Day",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE);*/
+        timeDialog("The dawn came.");
     }
 
+
+    private void timeDialog(String message) {
+        JOptionPane optionPane = new JOptionPane(
+                message,
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        JDialog dialog = optionPane.createDialog("Start");
+        Timer timer = new Timer(2000, _ -> dialog.dispose());
+
+        timer.setRepeats(false);
+        timer.start();
+
+        dialog.setVisible(true);
+    }
+
+
+
+
     void displayPlayerKilled(String player) {
+        //System.out.println("Victim:" + player);
         // Явное сообщение о решении
         removePlayer(player);
     }
 
     void displayPlayerSpoken(String player, String message) {
+        //System.out.println("voter:" + player + ", mes: " + message);
         setPlayerSpeech(player, message);
     }
 
     void displayVote(String voter, String voted) {
+        //System.out.println("voter:" + voted + ", voted: " + voted);
         showVote(voter, voted);
     }
 
 
     // ВИДНО ТОЛЬКО ЧЛЕНАМ МАФИИ
     void displayMafiaVote(String voter, String voted) {
+        //System.out.println("voter:" + voted + ", voted: " + voted);
         showVote(voter, voted);
     }
 
     void displayMafiaDecision(String victim) {
-        JOptionPane.showMessageDialog(this,
+        /*JOptionPane.showMessageDialog(this,
                 "According to the results of the vote, the victim was chosen: " + victim,
                 "The result",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE);*/
+        JOptionPane optionPane = new JOptionPane(
+                "According to the results of the vote, the victim was chosen: " + victim,
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        JDialog dialog = optionPane.createDialog("Start");
+        Timer timer = new Timer(3000, _ -> dialog.dispose());
+
+        timer.setRepeats(false);
+        timer.start();
+
+        dialog.setVisible(true);
     }
 
     void displayElimination(String player) {
-        JOptionPane.showMessageDialog(this,
+        /*JOptionPane.showMessageDialog(this,
                 "According to the results of the vote, the player is excluded: " + player,
                 "The result",
                 JOptionPane.INFORMATION_MESSAGE);
+        removePlayer(player);*/
+        JOptionPane optionPane = new JOptionPane(
+                "According to the results of the vote, the player is excluded: " + player,
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        JDialog dialog = optionPane.createDialog("Start");
+        Timer timer = new Timer(3000, _ -> dialog.dispose());
+
+        timer.setRepeats(false);
+        timer.start();
+
+        dialog.setVisible(true);
+        removePlayer(player);
     }
 
     void displayGameEnd(String winner) {
@@ -417,6 +504,7 @@ public class GuiView extends JFrame {
                 "Game over! The team won: " + winner,
                 "Game Over",
                 JOptionPane.INFORMATION_MESSAGE);
+        System.exit(0);
     }
 
     void displayGameOver() {
@@ -424,13 +512,15 @@ public class GuiView extends JFrame {
                 "Game over! Alas, you were killed.",
                 "Game Over",
                 JOptionPane.INFORMATION_MESSAGE);
+        System.exit(0);
     }
 
     void displayPlayerRole(String player, String role) {
-        JOptionPane.showMessageDialog(this,
+        /*JOptionPane.showMessageDialog(this,
                 "Player " + player + ", your role is: " + role,
                 "About you",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE);*/
+        timeDialog("Player " + player + ", your role is: " + role);
     }
 
     void updateLivingPlayers(List<String> players) {
@@ -444,44 +534,44 @@ public class GuiView extends JFrame {
              boolean isAlive = aliveSet.contains(name);
              panel.setEnabled(isAlive);
              icon.setEnabled(isAlive);
-
-             // Серый фон + иконка при смерти
-             panel.setBackground(isAlive ? Color.WHITE : Color.LIGHT_GRAY);
-
-             // Затемнение изображения
-             /*if (!isAlive) {
-                 icon.setIcon(toGrayscale(icon.getIcon()));
-             }*/
          }
 
          revalidate();
          repaint();
     }
 
-    private Icon toGrayscale(Icon originalIcon) {
-        if (!(originalIcon instanceof ImageIcon imageIcon)) return originalIcon;
-
-        Image img = imageIcon.getImage();
-        BufferedImage gray = new BufferedImage(
-                img.getWidth(null),
-                img.getHeight(null),
-                BufferedImage.TYPE_BYTE_GRAY
-        );
-
-        Graphics g = gray.getGraphics();
-        g.drawImage(img, 0, 0, null);
-        g.dispose();
-
-        return new ImageIcon(gray);
-    }
-
 
     // ТОЛЬКО МАФИИ
     void displayLivingMafia(List<String> mafiaMembers) {
+        darkenAllPlayers();
+
+        // 2. Подсвечиваем только мафию
+        for (String name : mafiaMembers) {
+            JPanel panel = playerPanels.get(name);
+            JLabel icon = iconLabels.get(name);
+
+            if (panel != null && icon != null) {
+                panel.setBackground(new Color(42, 42, 53)); // Серый фон
+                icon.setIcon(getMafiaNightIcon()); // Спец. иконка мафии ночью
+                panel.setVisible(true); // На случай, если был скрыт
+            }
+        }
     }
 
     // ТОЛЬКО ШЕРИФУ
     void displayLivingSheriff(String sheriff) {
+        darkenAllPlayers();
+
+        // 2. Подсвечиваем только мафию
+        JPanel panel = playerPanels.get(sheriff);
+        JLabel icon = iconLabels.get(sheriff);
+
+        if (panel != null && icon != null) {
+            panel.setBackground(new Color(42, 42, 53));
+            icon.setIcon(getSheriffNightIcon());
+            panel.setVisible(true); // На случай, если был скрыт
+        }
+
     }
 
     public void displaySheriffInvestigation(String target, boolean isMafia) {
@@ -490,35 +580,101 @@ public class GuiView extends JFrame {
             result = (target + " is a mafia member!");
         else
             result = (target + " is not a mafia member.");
-        JOptionPane.showMessageDialog(this,
+
+        JOptionPane optionPane = new JOptionPane(
+                result,
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        JDialog dialog = optionPane.createDialog("Start");
+        Timer timer = new Timer(3000, _ -> dialog.dispose());
+
+        timer.setRepeats(false);
+        timer.start();
+
+        dialog.setVisible(true);
+
+
+
+        /*JOptionPane.showMessageDialog(this,
                  result,
                 "Sheriff",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE);*/
     }
 
     // ТОЛЬКО ДОКТОРУ
     void displayLivingDoctor(String doctor) {
+        darkenAllPlayers();
+
+        // 2. Подсвечиваем только мафию
+        JPanel panel = playerPanels.get(doctor);
+        JLabel icon = iconLabels.get(doctor);
+
+        if (panel != null && icon != null) {
+            panel.setBackground(new Color(42, 42, 53));
+            icon.setIcon(getDoctorNightIcon());
+            panel.setVisible(true); // На случай, если был скрыт
+        }
     }
 
     void displayDoctorChosen(String target) {
-        JOptionPane.showMessageDialog(this,
+        /*JOptionPane.showMessageDialog(this,
                 "The doctor chose the patient: " + target,
                 "Doctor",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE);*/
+
+        JOptionPane optionPane = new JOptionPane(
+                "The doctor chose the patient: " + target,
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        JDialog dialog = optionPane.createDialog("Start");
+        Timer timer = new Timer(2000, _ -> dialog.dispose());
+
+        timer.setRepeats(false);
+        timer.start();
+
+        dialog.setVisible(true);
     }
 
     void displayLastWord(String player, String message) {
-        JOptionPane.showMessageDialog(this,
+        /*JOptionPane.showMessageDialog(this,
                 "The last word of the player " + player + ": \n" + message,
                 "The last word",
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE);*/
+
+        JOptionPane optionPane = new JOptionPane(
+                "The last word of the player " + player + ": \n" + message,
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        JDialog dialog = optionPane.createDialog("Start");
+        Timer timer = new Timer(4000, _ -> dialog.dispose());
+
+        timer.setRepeats(false);
+        timer.start();
+
+        dialog.setVisible(true);
     }
 
     void displayMessage(String message) {
-        JOptionPane.showMessageDialog(this,
+        /*JOptionPane.showMessageDialog(this,
                 message,
                 null,
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.INFORMATION_MESSAGE);*/
+
+        JOptionPane optionPane = new JOptionPane(
+                message,
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        JDialog dialog = optionPane.createDialog("Start");
+        Timer timer = new Timer(3000, _ -> dialog.dispose());
+
+        timer.setRepeats(false);
+        timer.start();
+
+        dialog.setVisible(true);
     }
 
     void displayNewVote() {
@@ -533,6 +689,44 @@ public class GuiView extends JFrame {
                 "According to the results of the vote, no one was excluded!",
                 "The result",
                 JOptionPane.INFORMATION_MESSAGE);
+    }
+
+
+    // Для закрывающего окошка
+    private void setupWindowListener() {
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                showExitConfirmation();
+            }
+        });
+    }
+
+    private void showExitConfirmation() {
+        // Создаем немодальный диалог
+        JOptionPane optionPane = new JOptionPane(
+                "Are you sure you want to exit?",
+                JOptionPane.QUESTION_MESSAGE,
+                JOptionPane.YES_NO_OPTION
+        );
+
+        JDialog dialog = optionPane.createDialog(this, "Game exit");
+        dialog.setModal(false);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+
+        // Обработка ответа
+        optionPane.addPropertyChangeListener(e -> {
+            if (e.getPropertyName().equals(JOptionPane.VALUE_PROPERTY)) {
+                Object value = optionPane.getValue();
+                dialog.dispose();
+
+                if (value instanceof Integer && (Integer)value == JOptionPane.YES_OPTION) {
+                    System.exit(0);
+                }
+            }
+        });
+
+        dialog.setVisible(true);
     }
 
 }

@@ -18,6 +18,8 @@ import javax.swing.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class GuiController implements Controller {
     private final Model model;
@@ -39,24 +41,27 @@ public class GuiController implements Controller {
 
     public void runGame() {
         // Запуск игрового цикла
+        new Thread(() -> {
+
+            gameStart();
+            view.setVisible(true);
+
+            while (true) {
+                handleNight();
+                if (model.isMafiaWon() || !self.isAlive()) break;
+                handleDay();
+                if (model.isCiviliansWon() || !self.isAlive()) break;
+            }
 
 
-        gameStart();
-        view.setVisible(true);
-
-        while (true) {
-            handleNight();
-            if (model.isMafiaWon() || !self.isAlive()) break;
-            handleDay();
-            if (model.isCiviliansWon() || !self.isAlive()) break;
-        }
-        if (!self.isAlive()) {
-            model.gameOver();
-        } else if (model.isMafiaWon()) {
-            model.mafiaWon();
-        } else if (model.isCiviliansWon()) {
-            model.civiliansWon();
-        }
+            if (!self.isAlive()) {
+                model.gameOver();
+            } else if (model.isMafiaWon()) {
+                model.mafiaWon();
+            } else if (model.isCiviliansWon()) {
+                model.civiliansWon();
+            }
+        }).start();
     }
 
     private void gameStart() {
@@ -84,7 +89,7 @@ public class GuiController implements Controller {
             DecisionProvider botEngine = new BotEngine();
             Player bot = new Player("Bot " + (i + 1), model.getRoleForNewPlayer(), true, botEngine);
             playersList.add(bot);
-            view.addPlayer("Bot" + (i + 1));
+            view.addPlayer("Bot " + (i + 1));
         }
 
         // Model посылает Observer сообщение о роли через Observer
