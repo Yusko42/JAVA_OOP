@@ -38,7 +38,7 @@ public class TitleScreenController {
         String playerName;
         while (true) {
             playerName = view.displayEnterYourName();
-            if (playerName != null && !playerName.trim().isEmpty() && (!playerName.contains("Bot"))) {
+            if (playerName != null && !playerName.trim().isEmpty()) {
                 break;
             }
             view.displayInvalidNameInput();
